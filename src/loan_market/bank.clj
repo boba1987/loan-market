@@ -1,8 +1,7 @@
 (ns loan-market.bank
-  (:refer-clojure :exclude [sort])
   (:require [loan-market.mock-data :as mock-data]))
 
-(def sort
+(def sortBanks
   (fn [banks sort-by sort-direction]
     (let [key-fn (case sort-by
                    :name (fn [bank] (:name bank))
@@ -18,8 +17,8 @@
 
 (def -main
   (fn []
-    (let [sorted-by-name (sort mock-data/banks "name" "asc")
-          sorted-by-interest (sort mock-data/banks "interest" "asc")]
+    (let [sorted-by-name (sortBanks mock-data/banks "name" "asc")
+          sorted-by-interest (sortBanks mock-data/banks "interest" "asc")]
       (println "Sorted banks by name (asc):" sorted-by-name)
       (println "Sorted banks by interest rate (asc):" sorted-by-interest)
       sorted-by-name)))
