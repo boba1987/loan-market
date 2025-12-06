@@ -1,20 +1,25 @@
 (ns loan-market.data-loader
-  (:require [clojure.data.csv :as csv]
-            [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]))
 
 (defn load-banks-from-csv
   "Loads bank data from CSV file and returns a vector of bank maps"
   []
   (let [csv-file (io/file "resources/data/banks.csv")
         csv-content (slurp csv-file)
-        csv-data (csv/read-csv (java.io.StringReader. csv-content))
-        rows (->> (rest csv-data)
-                  (filter (fn [row] (not (every? empty? row)))))]
-    (vec (map (fn [row]
-                {:id (Integer/parseInt (nth row 0))
-                 :name (nth row 1)
-                 :interest (Double/parseDouble (nth row 2))})
-              rows))))
+        all-lines (str/split-lines csv-content)
+        data-lines (rest all-lines)]
+    (vec (map (fn [line]
+                (let [fields (str/split line #",")
+                      id-str (nth fields 0)
+                      name-str (nth fields 1)
+                      interest-str (nth fields 2)
+                      id (Integer/parseInt id-str)
+                      interest (Double/parseDouble interest-str)]
+                  {:id id
+                   :name name-str
+                   :interest interest}))
+              data-lines))))
 
 (def banks (load-banks-from-csv))
 
