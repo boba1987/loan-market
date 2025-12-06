@@ -1,10 +1,10 @@
 (ns loan-market.interest
-  (:require [loan-market.mock-data :as mock-data]))
+  (:require [loan-market.data-loader :as data-loader]))
 
 (def average-interest-rate
   (fn
     ([]
-     (average-interest-rate mock-data/banks))
+     (average-interest-rate data-loader/banks))
     ([banks]
      (if (empty? banks)
        0.0

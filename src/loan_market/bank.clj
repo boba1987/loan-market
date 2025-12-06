@@ -1,5 +1,6 @@
 (ns loan-market.bank
-  (:require [loan-market.mock-data :as mock-data]))
+  (:require [loan-market.data-loader :as data-loader]
+            [clojure.pprint :as pprint]))
 
 (def sortBanks
   (fn [banks sort-by sort-direction]
@@ -17,9 +18,11 @@
 
 (def -main
   (fn []
-    (let [sorted-by-name (sortBanks mock-data/banks "name" "asc")
-          sorted-by-interest (sortBanks mock-data/banks "interest" "asc")]
-      (println "Sorted banks by name (asc):" sorted-by-name)
-      (println "Sorted banks by interest rate (asc):" sorted-by-interest)
+      (let [sorted-by-name (sortBanks data-loader/banks "name" "asc")
+          sorted-by-interest (sortBanks data-loader/banks "interest" "asc")]
+      (println "Sorted banks by name (asc):")
+      (pprint/pprint sorted-by-name)
+      (println "\nSorted banks by interest rate (asc):")
+      (pprint/pprint sorted-by-interest)
       sorted-by-name)))
 

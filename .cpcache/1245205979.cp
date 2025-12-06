@@ -1,0 +1,1 @@
+src:/Users/slobodandjordjevic/.m2/repository/org/clojure/clojure/1.12.3/clojure-1.12.3.jar:/Users/slobodandjordjevic/.m2/repository/org/clojure/data.csv/1.0.1/data.csv-1.0.1.jar:/Users/slobodandjordjevic/.m2/repository/org/clojure/core.specs.alpha/0.4.74/core.specs.alpha-0.4.74.jar:/Users/slobodandjordjevic/.m2/repository/org/clojure/spec.alpha/0.5.238/spec.alpha-0.5.238.jar
