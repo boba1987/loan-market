@@ -23,3 +23,27 @@
 
 (def banks (load-banks-from-csv))
 
+(defn add-bank-to-csv
+  "Adds a new bank to the CSV file. Throws an error if a bank with the same id already exists.
+   Parameters:
+   - id: integer bank id
+   - name: string bank name
+   - interest: double interest rate"
+  [id name interest]
+  (let [csv-file (io/file "resources/data/banks.csv")
+        csv-content (slurp csv-file)
+        all-lines (str/split-lines csv-content)
+        data-lines (rest all-lines)
+        existing-ids (set (map (fn [line]
+                                 (let [fields (str/split line #",")
+                                       id-str (nth fields 0)]
+                                   (Integer/parseInt id-str)))
+                               data-lines))]
+    (if (contains? existing-ids id)
+      (throw (IllegalArgumentException.
+              (str "Bank with id " id " already exists in the list")))
+      (let [new-line (str id "," name "," interest)
+            updated-lines (conj (vec all-lines) new-line)
+            updated-content (str/join "\n" updated-lines)]
+        (spit csv-file updated-content)))))
+

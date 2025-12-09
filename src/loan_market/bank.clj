@@ -45,12 +45,16 @@
 
 (def -main
   (fn []
-    (let [sorted-by-name (sortBanks data-loader/banks "name" "asc")
-          sorted-by-interest (sortBanks data-loader/banks "interest" "asc")
-          highest-interest (find-highest-interest-bank data-loader/banks)
-          banks-above-3 (count-banks-above-threshold data-loader/banks 3.0)
-          formatted-banks (format-bank-names data-loader/banks)]
-      (println "Sorted banks by name (asc):")
+    (println "Adding a new bank to CSV...")
+    (data-loader/add-bank-to-csv 7 "Nova Bank" 3.7)
+    (println "Bank added successfully!")
+    (let [updated-banks (data-loader/load-banks-from-csv)
+          sorted-by-name (sortBanks updated-banks "name" "asc")
+          sorted-by-interest (sortBanks updated-banks "interest" "asc")
+          highest-interest (find-highest-interest-bank updated-banks)
+          banks-above-3 (count-banks-above-threshold updated-banks 3.0)
+          formatted-banks (format-bank-names updated-banks)]
+      (println "\nSorted banks by name (asc):")
       (pprint/pprint sorted-by-name)
       (println "\nSorted banks by interest rate (asc):")
       (pprint/pprint sorted-by-interest)
