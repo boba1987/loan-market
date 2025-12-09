@@ -47,6 +47,12 @@
 
 (def -main
   (fn []
-    (let [avg-rate (average-interest-rate)]
+    (let [avg-rate (average-interest-rate)
+          total (total-interest)
+          above-avg-count (banks-above-average-count)
+          rates-above-3 (interest-rates-above-threshold 3.0)]
       (println "Average interest rate:" avg-rate "%")
+      (println "\nTotal interest rate (using reduce):" total "%")
+      (println "\nNumber of banks above average interest rate (using ->):" above-avg-count)
+      (println "\nInterest rates above 3.0% (using map):" rates-above-3)
       avg-rate)))
