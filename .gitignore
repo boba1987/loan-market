@@ -1,1 +1,6 @@
 .nrepl-port
+.clj-kondo/**
+.cpcache/**
+.idea/**
+.nrepl-port
+.nrepl-port
