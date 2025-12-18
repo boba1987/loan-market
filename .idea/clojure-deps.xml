@@ -9,10 +9,5 @@
         </FolderState>
       </set>
     </option>
-    <option name="projectFiles">
-      <set>
-        <option value="file://$PROJECT_DIR$/deps.edn" />
-      </set>
-    </option>
   </component>
 </project>
