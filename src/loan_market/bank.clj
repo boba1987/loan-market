@@ -45,9 +45,6 @@
 
 (def -main
   (fn []
-    (println "Adding a new bank to CSV...")
-    (data-loader/add-bank-to-csv 7 "Nova Bank" 3.7)
-    (println "Bank added successfully!")
     (let [updated-banks (data-loader/load-banks-from-csv)
           sorted-by-name (sortBanks updated-banks "name" "asc")
           sorted-by-interest (sortBanks updated-banks "interest" "asc")
