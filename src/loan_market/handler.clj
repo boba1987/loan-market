@@ -1,9 +1,6 @@
 (ns loan-market.handler
-  (:require [compojure.core :refer [GET defroutes]]
-            [compojure.route :as route]
-            [ring.util.response :as response]))
+  (:require [loan-market.routes.public :as public]))
 
-(defroutes app
-  (GET "/" [] (-> (response/response "hello world")
-                  (response/content-type "text/plain")))
-  (route/not-found "Not found"))
+(def app
+  "Ring handler; used by loan-market.core to start the server."
+  public/routes)
