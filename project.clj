@@ -4,6 +4,11 @@
                  [ring/ring-jetty-adapter "1.12.0"]
                  [compojure "1.7.1"]
                  [org.slf4j/slf4j-simple "2.0.9"]]
+  :plugins [[lein-ring "0.12.6"]]
+  :ring {:handler loan-market.handler/app
+         :port 3000
+         :auto-reload? true
+         :auto-refresh? true}
   :main loan-market.core
   :profiles {:dev {:dependencies [[midje "1.10.10"]
                                   [criterium "0.5.153-ALPHA"]]
