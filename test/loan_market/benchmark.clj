@@ -1,8 +1,8 @@
 (ns loan-market.benchmark
   (:require [criterium.core :as c]
-            [loan-market.bank :as bank]
-            [loan-market.interest :as interest]
-            [loan-market.data-loader :as data-loader]))
+            [loan-market.domain.bank :as bank]
+            [loan-market.domain.interest :as interest]
+            [loan-market.domain.data-loader :as data-loader]))
 
 (def test-banks [{:name "Bank A" :interest 2.5}
                  {:name "Bank B" :interest 3.0}

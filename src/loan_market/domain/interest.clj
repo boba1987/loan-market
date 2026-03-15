@@ -1,5 +1,5 @@
-(ns loan-market.interest
-  (:require [loan-market.data-loader :as data-loader]))
+(ns loan-market.domain.interest
+  (:require [loan-market.domain.data-loader :as data-loader]))
 
 (def average-interest-rate
   (fn

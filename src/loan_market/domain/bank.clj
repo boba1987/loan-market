@@ -1,5 +1,5 @@
-(ns loan-market.bank
-  (:require [loan-market.data-loader :as data-loader]
+(ns loan-market.domain.bank
+  (:require [loan-market.domain.data-loader :as data-loader]
             [clojure.pprint :as pprint]))
 
 (def sortBanks
@@ -62,4 +62,3 @@
       (println "\nFormatted bank names (using map):")
       (pprint/pprint formatted-banks)
       sorted-by-name)))
-

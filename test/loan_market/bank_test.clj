@@ -1,6 +1,6 @@
 (ns loan-market.bank-test
   (:require [midje.sweet :refer [facts fact => throws]]
-            [loan-market.bank :as bank]))
+            [loan-market.domain.bank :as bank]))
 
 (facts "about sortBanks"
        (let [test-banks [{:name "Bank A" :interest 2.5}

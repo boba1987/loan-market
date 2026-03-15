@@ -1,4 +1,4 @@
-(ns loan-market.data-loader
+(ns loan-market.domain.data-loader
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
@@ -46,4 +46,3 @@
             updated-lines (conj (vec all-lines) new-line)
             updated-content (str/join "\n" updated-lines)]
         (spit csv-file updated-content)))))
-
