@@ -1,6 +1,26 @@
+# Leiningen / Clojure
+target/
+checkouts/
+.lein-*
 .nrepl-port
+
+# Tooling
 .clj-kondo/**
 .cpcache/**
+.lsp/
+
+# IDE
 .idea/**
+*.iml
+
+# Env
 .env
-.nrepl-port
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor backup/swap
+*~
+*.swp
+*.swo
