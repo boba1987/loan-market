@@ -9,6 +9,7 @@
   "If no users exist, transact seed users (bank/bankPass, user/userPass). Idempotent."
   [conn]
   (when (zero? (user/count-users conn))
+    (println "[seed] Database empty — seeding users (bank, user).")
     (doseq [s seed-users]
       (user/create! conn (:username s) (:password s) (:role s))))
   conn)
