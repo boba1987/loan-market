@@ -2,5 +2,5 @@
 .clj-kondo/**
 .cpcache/**
 .idea/**
-.nrepl-port
+.env
 .nrepl-port
