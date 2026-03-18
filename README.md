@@ -18,7 +18,8 @@ src/loan_market/
   auth/
     core.clj         # JWT, login, role middleware
   routes/
-    public.clj       # /, /api/login, /api/admin/users
+    public.clj       # /, /api/login
+    admin.clj        # /api/admin/* (role: admin)
     user.clj         # /api/user/* (role: user)
     bank.clj         # /api/bank/* (role: bank)
 ```
@@ -62,16 +63,17 @@ The app and the REPL are separate processes. To query the **same** database the 
 
    **Note:** Datomic Local allows only one process to connect to the same storage at a time. If the app is running, the REPL will get "File .../.lock is in use". Either **stop the app** and then use the REPL, or use the admin endpoint below while the app is running.
 
-6. **While the app is running:** `GET /api/admin/users` returns the users in the app's DB as JSON (no second connection needed).
+6. **While the app is running:** `GET /api/admin/users` returns the users in the app's DB as JSON (send an admin JWT; no second connection needed).
 
 ## Default seed users
 
-When the database is empty, the app seeds two users:
+On startup, the app seeds any missing default users (bank, user, admin):
 
 | Role | Username | Password  |
 |------|----------|-----------|
 | Bank | `bank`   | `bankPass` |
 | User | `user`   | `userPass` |
+| Admin | `admin` | `adminPass` |
 
 These are for local development only. Change or disable them in production.
 
@@ -79,12 +81,22 @@ These are for local development only. Change or disable them in production.
 
 - **Public**
   - `GET /` – Hello world.
-  - `POST /api/login` – Body `{"username":"...","password":"..."}`. Returns `{"token":"...","role":"user"|"bank"}`.
-  - `GET /api/admin/users` – Returns `{"users":[{"username":"...","role":"..."}]}` from the DB (for inspecting data while the app runs).
+  - `POST /api/login` – Body `{"username":"...","password":"..."}`. Returns `{"token":"...","role":"user"|"bank"|"admin"}`.
 - **Authenticated (User)** – Send `Authorization: Bearer <token>`.
   - `GET /api/user/me` – Current user info.
   - `POST /api/user/credit-applications` – Submit a credit application (authenticated). `dateOfBirth` must be `YYYY-MM-DD`.
   - `GET /api/user/credit-applications?page=1&pageSize=20` – List your credit applications with offset pagination.
+- **Authenticated (Admin)** – Same header, role must be `admin`.
+  - `GET /api/admin/users` – Returns `{"users":[{"username":"...","role":"..."}]}`.
+  - `POST /api/admin/users` – Body `{"username":"...","password":"...","role":"user"|"bank"|"admin"}`. Creates a new user.
+  - `PUT /api/admin/users/:username` – Body `{"password":"...","role":"..."}` (either can be included). Updates the user.
+  - `DELETE /api/admin/users/:username` – Deletes the user.
+  - `GET /api/admin/banks` – Returns banks from `resources/data/banks.csv` as JSON.
+  - `POST /api/admin/banks` – Body `{"id":1,"name":"...","interest":3.5}`. Adds a bank.
+  - `PUT /api/admin/banks/:id` – Body `{"name":"...","interest":3.5}`. Updates the bank.
+  - `DELETE /api/admin/banks/:id` – Deletes the bank.
+  - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.
+  - `DELETE /api/admin/credit-applications/:id` – Deletes a credit application.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
   - `GET /api/bank/me` – Current bank user info.
   - `GET /api/bank/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.
