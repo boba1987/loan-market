@@ -33,6 +33,31 @@
                               :user/password-hash (hash-password plain-password)
                               :user/role         (str role)}]}))
 
+(defn update!
+  "Update a user. Only updates fields present in the map.
+   Supported keys: :password (plain), :role.
+   Throws ex-info if the user doesn't exist."
+  [conn username {:keys [password role]}]
+  (let [eid (eid-by-username conn username)]
+    (when-not eid
+      (throw (ex-info "User not found" {:username (str username)})))
+    (let [tx-data (cond-> {:db/id eid}
+                    password (assoc :user/password-hash (hash-password password))
+                    role     (assoc :user/role (str role)))]
+      (d/transact conn {:tx-data [tx-data]}))))
+
+(defn delete!
+  "Delete a user by username. Throws ex-info if the user doesn't exist."
+  [conn username]
+  (let [eid (eid-by-username conn username)]
+    (when-not eid
+      (throw (ex-info "User not found" {:username (str username)})))
+    (let [db (d/db conn)
+          u  (d/pull db '[:user/username :user/password-hash :user/role] eid)]
+      (d/transact conn {:tx-data [[:db/retract eid :user/username      (:user/username u)]
+                                 [:db/retract eid :user/password-hash (:user/password-hash u)]
+                                 [:db/retract eid :user/role          (:user/role u)]]}))))
+
 (defn count-users
   "Return number of users in the database (for empty check)."
   [conn]

@@ -4,6 +4,7 @@
             [loan-market.auth.core :as auth]
             [loan-market.db.core :as db]
             [loan-market.db.seed :as seed]
+            [loan-market.routes.admin :as admin-routes]
             [loan-market.routes.public :as public]
             [loan-market.routes.user :as user-routes]
             [loan-market.routes.bank :as bank-routes]
@@ -17,6 +18,8 @@
          (auth/wrap-jwt (auth/wrap-require-role (user-routes/user-routes conn) ["user"])))
        (context "/api/bank" []
          (auth/wrap-jwt (auth/wrap-require-role (bank-routes/bank-routes conn) ["bank"])))
+       (context "/api/admin" []
+         (auth/wrap-jwt (auth/wrap-require-role (admin-routes/admin-routes conn) ["admin"])))
        (route/not-found "Not found"))
       json/wrap-json-response
       json/wrap-json-body))

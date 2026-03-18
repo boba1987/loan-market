@@ -169,3 +169,15 @@
      :pageSize s
      :total total}))
 
+(defn delete!
+  "Delete a credit application by its numeric Datomic entity id (the `:id` returned from create!/list*)."
+  [conn application-id]
+  (let [db  (d/db conn)
+        eid (Long/parseLong (str application-id))]
+    (when-not (d/pull db '[:db/id] eid)
+      (throw (ex-info "Credit application not found" {:id application-id})))
+    ;; Use retractEntity so deletion doesn't depend on referenced entities
+    ;; (e.g. :credit-application/user may point to a user that no longer exists).
+    (d/transact conn {:tx-data [[:db/retractEntity eid]]})
+    conn))
+
