@@ -83,5 +83,7 @@ These are for local development only. Change or disable them in production.
   - `GET /api/admin/users` – Returns `{"users":[{"username":"...","role":"..."}]}` from the DB (for inspecting data while the app runs).
 - **Authenticated (User)** – Send `Authorization: Bearer <token>`.
   - `GET /api/user/me` – Current user info.
+  - `POST /api/user/credit-applications` – Submit a credit application (authenticated). `dateOfBirth` must be `YYYY-MM-DD`.
+  - `GET /api/user/credit-applications?page=1&pageSize=20` – List your credit applications with offset pagination.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
   - `GET /api/bank/me` – Current bank user info.

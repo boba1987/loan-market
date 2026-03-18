@@ -1,5 +1,6 @@
 (ns loan-market.handler
   (:require [compojure.core :refer [context routes]]
+            [compojure.route :as route]
             [loan-market.auth.core :as auth]
             [loan-market.db.core :as db]
             [loan-market.db.seed :as seed]
@@ -14,9 +15,10 @@
   (-> (routes
        (public/public-routes conn)
        (context "/api/user" []
-         (auth/wrap-jwt (auth/wrap-require-role (user-routes/user-routes) ["user"])))
+         (auth/wrap-jwt (auth/wrap-require-role (user-routes/user-routes conn) ["user"])))
        (context "/api/bank" []
-         (auth/wrap-jwt (auth/wrap-require-role (bank-routes/bank-routes) ["bank"]))))
+         (auth/wrap-jwt (auth/wrap-require-role (bank-routes/bank-routes) ["bank"])))
+       (route/not-found "Not found"))
       json/wrap-json-response
       json/wrap-json-body))
 
@@ -25,11 +27,6 @@
   (delay (let [c (db/connect)]
            (seed/seed-if-empty! c)
            c)))
-
-(defn init!
-  "Force DB connection and seed at server startup. Called by lein ring :init."
-  []
-  (force conn))
 
 (defn app
   "Ring handler. (app request) for lein ring server; (app conn) returns a handler for lein run."

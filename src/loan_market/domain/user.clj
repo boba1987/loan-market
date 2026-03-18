@@ -2,12 +2,18 @@
   (:require [datomic.client.api :as d]
             [buddy.hashers :as hashers]))
 
+(defn eid-by-username
+  "Return user entity id by username, or nil."
+  [conn username]
+  (ffirst (d/q '[:find ?e :in $ ?u :where [?e :user/username ?u]]
+               (d/db conn)
+               (str username))))
+
 (defn find-by-username
   "Return user entity map by username, or nil."
   [conn username]
   (let [db (d/db conn)
-        result (d/q '[:find ?e :in $ ?u :where [?e :user/username ?u]] db (str username))
-        eid (ffirst result)]
+        eid (eid-by-username conn username)]
     (when eid
       (d/pull db '[:user/username :user/password-hash :user/role] eid))))
 

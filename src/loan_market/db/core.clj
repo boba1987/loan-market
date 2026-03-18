@@ -31,16 +31,65 @@
     :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}])
 
-(defn schema-exists? [conn]
-  (let [db (d/db conn)
-        result (d/q '[:find ?e :where [?e :db/ident :user/username]] db)]
-    (boolean (seq result))))
+(def credit-application-schema
+  [{:db/ident       :credit-application/user
+    :db/valueType   :db.type/ref
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/name
+    :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/email
+    :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/amount
+    :db/valueType   :db.type/double
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/income
+    :db/valueType   :db.type/double
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/debt
+    :db/valueType   :db.type/double
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/date-of-birth
+    :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/married
+    :db/valueType   :db.type/boolean
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/years-working
+    :db/valueType   :db.type/long
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/years-experience
+    :db/valueType   :db.type/long
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/industry
+    :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :credit-application/created-at
+    :db/valueType   :db.type/instant
+    :db/cardinality :db.cardinality/one}])
+
+(defn- ident-exists?
+  [db ident]
+  (boolean (seq (d/q '[:find ?e :in $ ?ident :where [?e :db/ident ?ident]] db ident))))
+
+(defn- missing-schema
+  "Return schema attribute maps whose :db/ident is not present in db."
+  [db schema]
+  (->> schema
+       (remove (fn [attr] (ident-exists? db (:db/ident attr))))
+       (vec)))
 
 (defn ensure-schema!
-  "Transact user schema if not already present."
+  "Transact any missing schema attributes (user + credit application)."
   [conn]
-  (when-not (schema-exists? conn)
-    (d/transact conn {:tx-data user-schema}))
+  (let [db (d/db conn)
+        missing (into []
+                      cat
+                      [(missing-schema db user-schema)
+                       (missing-schema db credit-application-schema)])]
+    (when (seq missing)
+      (d/transact conn {:tx-data missing})))
   conn)
 
 (defn connect
