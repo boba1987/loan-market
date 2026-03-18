@@ -27,9 +27,9 @@
   "Ring handler: POST body {:username \"\" :password \"\"}. Returns 200 {:token \"\" :role \"\"} or 401."
   [conn]
   (fn [request]
-    (let [body   (get request :body)
-          username (get body :username)
-          password (get body :password)]
+    (let [body    (get request :body)
+          username (or (get body :username) (get body "username"))
+          password (or (get body :password) (get body "password"))]
       (if (or (str/blank? (str username)) (str/blank? (str password)))
         (-> (response/response {:error "username and password required"})
             (response/status 400)

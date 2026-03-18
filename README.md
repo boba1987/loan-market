@@ -27,7 +27,17 @@ src/loan_market/
 
 1. Copy `.env.example` to `.env` and set `JWT_SECRET` (required).
 2. (Optional) Set `DATOMIC_STORAGE_DIR` to an absolute path (e.g. `DATOMIC_STORAGE_DIR=/tmp/loan-market-datomic`) for persistent storage. If unset, the app uses in-memory storage (data is lost on restart).
-3. Start the server: `lein run` or `lein ring server-headless`.
+3. Start the server:
+
+```bash
+# Option A: run the main entry point (recommended)
+lein run
+
+# Option B: run via lein-ring (uses project.clj :ring config)
+lein ring server-headless
+```
+
+The server listens on `PORT` (default `3000`). Try: `curl http://localhost:3000/`.
 
 ### Querying the same DB from the REPL
 
