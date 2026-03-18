@@ -37,7 +37,7 @@
   (require-fields! payload [:name
                             :email
                             :amount
-                            :income
+                            :yearlyIncome
                             :debt
                             :dateOfBirth
                             :married
@@ -53,7 +53,7 @@
               :credit-application/name            (str (body-val payload :name))
               :credit-application/email           (str (body-val payload :email))
               :credit-application/amount          (parse-double* (body-val payload :amount))
-              :credit-application/income          (parse-double* (body-val payload :income))
+              :credit-application/yearlyIncome   (parse-double* (body-val payload :yearlyIncome))
               :credit-application/debt            (parse-double* (body-val payload :debt))
               :credit-application/date-of-birth   dob
               :credit-application/married         (boolean (body-val payload :married))
@@ -95,7 +95,7 @@
                                         :credit-application/name
                                         :credit-application/email
                                         :credit-application/amount
-                                        :credit-application/income
+                                        :credit-application/yearlyIncome
                                         :credit-application/debt
                                         :credit-application/date-of-birth
                                         :credit-application/married
@@ -108,7 +108,7 @@
                          :name            (:credit-application/name m)
                          :email           (:credit-application/email m)
                          :amount          (:credit-application/amount m)
-                         :income          (:credit-application/income m)
+                         :yearlyIncome   (:credit-application/yearlyIncome m)
                          :debt            (:credit-application/debt m)
                          :dateOfBirth     (:credit-application/date-of-birth m)
                          :married         (:credit-application/married m)
@@ -142,7 +142,7 @@
                                         :credit-application/name
                                         :credit-application/email
                                         :credit-application/amount
-                                        :credit-application/income
+                                        :credit-application/yearlyIncome
                                         :credit-application/debt
                                         :credit-application/date-of-birth
                                         :credit-application/married
@@ -155,7 +155,7 @@
                          :name            (:credit-application/name m)
                          :email           (:credit-application/email m)
                          :amount          (:credit-application/amount m)
-                         :income          (:credit-application/income m)
+                         :yearlyIncome   (:credit-application/yearlyIncome m)
                          :debt            (:credit-application/debt m)
                          :dateOfBirth     (:credit-application/date-of-birth m)
                          :married         (:credit-application/married m)

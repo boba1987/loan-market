@@ -42,7 +42,7 @@
    {:db/ident       :credit-application/amount
     :db/valueType   :db.type/double
     :db/cardinality :db.cardinality/one}
-   {:db/ident       :credit-application/income
+   {:db/ident       :credit-application/yearlyIncome
     :db/valueType   :db.type/double
     :db/cardinality :db.cardinality/one}
    {:db/ident       :credit-application/debt

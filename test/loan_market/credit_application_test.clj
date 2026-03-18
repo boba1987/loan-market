@@ -17,7 +17,7 @@
                        {:name "Jane Doe"
                         :email "jane@example.com"
                         :amount 10000
-                        :income 50000
+                        :yearlyIncome 50000
                         :debt 2000
                         :dateOfBirth "1990-01-30"
                         :married true
