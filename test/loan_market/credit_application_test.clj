@@ -33,5 +33,10 @@
           (:pageSize r1) => 1
           (:total r1) => pos?
           (count (:items r1)) => 1
-          (<= (count (:items r2)) 1) => true)))))
+        (<= (count (:items r2)) 1) => true))
+
+    (fact "list-all returns all applications (bank use-case)"
+      (let [all (credit-application/list-all conn {:page 1 :pageSize 50})]
+        (:total all) => pos?
+        (<= (count (:items all)) 50) => true)))))
 

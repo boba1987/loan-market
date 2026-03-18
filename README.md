@@ -87,3 +87,4 @@ These are for local development only. Change or disable them in production.
   - `GET /api/user/credit-applications?page=1&pageSize=20` – List your credit applications with offset pagination.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
   - `GET /api/bank/me` – Current bank user info.
+  - `GET /api/bank/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.

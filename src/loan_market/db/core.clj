@@ -3,7 +3,6 @@
             [loan-market.config :as config]))
 
 (defn client
-  "Create a Datomic Local client. Defaults to :storage-dir :mem (in-memory); set config/storage-dir for persistence."
   []
   (d/client (merge {:server-type :datomic-local
                     :system      (config/datomic-system)
@@ -12,11 +11,10 @@
                      {:storage-dir sd}))))
 
 (defn ensure-database!
-  "Create database if it does not exist. Returns client."
   [c]
   (let [db-name (config/db-name)]
     (when-not (d/create-database c {:db-name db-name})
-      nil) ; already exists
+      nil)
     c))
 
 (def user-schema
@@ -81,7 +79,6 @@
        (vec)))
 
 (defn ensure-schema!
-  "Transact any missing schema attributes (user + credit application)."
   [conn]
   (let [db (d/db conn)
         missing (into []

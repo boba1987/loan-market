@@ -122,3 +122,50 @@
      :pageSize s
      :total total}))
 
+(defn list-all
+  "List all applications with offset pagination (bank use-case).
+   opts: {:page 1-based int, :pageSize int}. Returns {:items [] :page :pageSize :total}."
+  [conn {:keys [page pageSize]}]
+  (let [p (max 1 (long (or page 1)))
+        s (max 1 (min 100 (long (or pageSize 20))))
+        offset (* (dec p) s)
+        db (d/db conn)
+        rows (d/q '[:find ?e ?createdAt
+                    :where [?e :credit-application/created-at ?createdAt]]
+                  db)
+        sorted (->> rows (sort-by second #(compare %2 %1)))
+        total (count sorted)
+        page-eids (->> sorted (drop offset) (take s) (map first))
+        items (mapv (fn [eid]
+                      (let [m (d/pull db
+                                      '[:db/id
+                                        :credit-application/name
+                                        :credit-application/email
+                                        :credit-application/amount
+                                        :credit-application/income
+                                        :credit-application/debt
+                                        :credit-application/date-of-birth
+                                        :credit-application/married
+                                        :credit-application/years-working
+                                        :credit-application/years-experience
+                                        :credit-application/industry
+                                        :credit-application/created-at]
+                                      eid)]
+                        {:id              (:db/id m)
+                         :name            (:credit-application/name m)
+                         :email           (:credit-application/email m)
+                         :amount          (:credit-application/amount m)
+                         :income          (:credit-application/income m)
+                         :debt            (:credit-application/debt m)
+                         :dateOfBirth     (:credit-application/date-of-birth m)
+                         :married         (:credit-application/married m)
+                         :yearsWorking    (:credit-application/years-working m)
+                         :yearsExperience (:credit-application/years-experience m)
+                         :industry        (:credit-application/industry m)
+                         :createdAt       (some-> (:credit-application/created-at m) (.getTime))}))
+                    page-eids)]
+    {:items items
+     :page p
+     :pageSize s
+     :total total}))
+
