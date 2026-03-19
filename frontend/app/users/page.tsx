@@ -223,9 +223,9 @@ export default function UsersPage() {
             <label className="text-xs font-medium">
               Role
               <select className="mt-1 w-full rounded border px-2 py-2" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}>
-                <option value="user">user</option>
-                <option value="bank">bank</option>
-                <option value="admin">admin</option>
+                <option value="user">User</option>
+                <option value="bank">Bank</option>
+                <option value="admin">Admin</option>
               </select>
             </label>
           </div>
@@ -250,10 +250,10 @@ export default function UsersPage() {
                 <option value="" disabled>
                   Select...
                 </option>
-                <option value="not married">not married</option>
-                <option value="married">married</option>
-                <option value="divorced">divorced</option>
-                <option value="other">other</option>
+                <option value="not married">Not married</option>
+                <option value="married">Married</option>
+                <option value="divorced">Divorced</option>
+                <option value="other">Other</option>
               </select>
             </label>
           </div>
@@ -280,10 +280,10 @@ export default function UsersPage() {
         <div className="mb-3 flex items-center gap-2">
           <label className="text-sm">Filter role:</label>
           <select className="rounded border px-2 py-1" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
-            <option value="">all</option>
-            <option value="user">user</option>
-            <option value="bank">bank</option>
-            <option value="admin">admin</option>
+            <option value="">All</option>
+            <option value="user">User</option>
+            <option value="bank">Bank</option>
+            <option value="admin">Admin</option>
           </select>
         </div>
         <div className="space-y-3">
@@ -331,9 +331,9 @@ export default function UsersPage() {
                       }))
                     }
                   >
-                    <option value="user">user</option>
-                    <option value="bank">bank</option>
-                    <option value="admin">admin</option>
+                    <option value="user">User</option>
+                    <option value="bank">Bank</option>
+                    <option value="admin">Admin</option>
                   </select>
                 </label>
                 <label className="text-xs font-medium">
@@ -364,10 +364,10 @@ export default function UsersPage() {
                     }
                   >
                     <option value="">Select...</option>
-                    <option value="not married">not married</option>
-                    <option value="married">married</option>
-                    <option value="divorced">divorced</option>
-                    <option value="other">other</option>
+                    <option value="not married">Not married</option>
+                    <option value="married">Married</option>
+                    <option value="divorced">Divorced</option>
+                    <option value="other">Other</option>
                   </select>
                 </label>
                 <label className="text-xs font-medium">

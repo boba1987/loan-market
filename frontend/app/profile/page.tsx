@@ -148,10 +148,10 @@ export default function ProfilePage() {
               onChange={(e) => setForm((p) => ({ ...p, maritalStatus: e.target.value }))}
             >
               <option value="">Select...</option>
-              <option value="not married">not married</option>
-              <option value="married">married</option>
-              <option value="divorced">divorced</option>
-              <option value="other">other</option>
+              <option value="not married">Not married</option>
+              <option value="married">Married</option>
+              <option value="divorced">Divorced</option>
+              <option value="other">Other</option>
             </select>
           </div>
           <div>
