@@ -95,7 +95,10 @@ export default function LoanApplicationsPage() {
     <AppShell auth={auth}>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Loan Applications</h1>
-        <button onClick={() => void load()} className="rounded bg-zinc-800 px-3 py-2 text-sm text-white">
+        <button
+          onClick={() => void load()}
+          className="rounded bg-zinc-800 px-3 py-2 text-sm text-white transition-colors hover:bg-zinc-700"
+        >
           Refresh
         </button>
       </div>
@@ -172,6 +175,23 @@ export default function LoanApplicationsPage() {
                   <ul className="list-disc pl-6 text-sm">
                     {app.offers.map((offer, i) => (
                       <li key={`${app.id}-${i}`}>
+                        {offer.bankName} ({offer.bankEmail}) - {offer.interestRate}% / {offer.repaymentPeriod} months
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-zinc-600">No offers yet.</p>
+                )}
+              </div>
+            ) : null}
+
+            {auth.role === "user" ? (
+              <div className="mt-3">
+                <p className="mb-2 text-sm font-semibold">Offers</p>
+                {app.offers?.length ? (
+                  <ul className="list-disc pl-6 text-sm">
+                    {app.offers.map((offer, i) => (
+                      <li key={`${app.id}-user-${i}`}>
                         {offer.bankName} ({offer.bankEmail}) - {offer.interestRate}% / {offer.repaymentPeriod} months
                       </li>
                     ))}

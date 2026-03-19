@@ -105,6 +105,23 @@
                        (drop offset)
                        (take s)
                        (map first))
+        offer-rows (d/q '[:find ?appEid ?bankName ?bankEmail ?interest ?period
+                          :in $ ?appEids
+                          :where
+                          [?offer :offer/credit-application ?appEid]
+                          [?offer :offer/bank ?bankEid]
+                          [?bankEid :user/name ?bankName]
+                          [?bankEid :user/email ?bankEmail]
+                          [?offer :offer/interest-rate ?interest]
+                          [?offer :offer/repayment-period ?period]
+                          [(contains? ?appEids ?appEid)]]
+                        db (set page-eids))
+        offers-by-app (reduce (fn [acc [appEid bankName bankEmail interest period]]
+                                (update acc appEid (fnil conj []) {:bankName bankName
+                                                                   :bankEmail bankEmail
+                                                                   :interestRate interest
+                                                                   :repaymentPeriod period}))
+                              {} offer-rows)
         items (mapv (fn [eid]
                       (let [m (d/pull db
                                       '[:db/id
@@ -119,7 +136,8 @@
                                         :credit-application/years-experience
                                         :credit-application/industry
                                         :credit-application/created-at]
-                                      eid)]
+                                      eid)
+                            offers (get offers-by-app eid [])]
                         (cond-> {:id            (:db/id m)
                                  :name          (:credit-application/name m)
                                  :email         (:credit-application/email m)
@@ -130,6 +148,7 @@
                                  :married       (:credit-application/married m)
                                  :yearsWorking  (:credit-application/years-working m)
                                   :industry      (:credit-application/industry m)
+                                 :offers        offers
                                  :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
                                 (some? (:credit-application/years-experience m))
                                 (assoc :yearsExperience (:credit-application/years-experience m)))))
