@@ -23,6 +23,71 @@ Configuration requirements:
 - `backend/.env` file with `JWT_SECRET` set
   - You can copy from `backend/.env.example`
 
+
+## Running Locally
+
+You can run the project with either:
+- `Makefile` helpers (recommended)
+- direct commands
+
+### 1) Backend
+
+```bash
+cd backend
+cp .env.example .env
+# set JWT_SECRET in .env
+lein ring server-headless
+```
+
+Backend runs on `http://localhost:3000` by default.
+
+### 2) Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend runs on `http://localhost:3001`.
+
+## Running with Docker
+
+### Prerequisites
+
+- Docker Desktop (or Docker Engine + Compose plugin)
+
+### Start project in Docker
+
+From project root:
+
+```bash
+make docker-up
+```
+
+Services:
+- Frontend: `http://localhost:3001`
+- Backend: `http://localhost:3000`
+
+### Stop Docker project
+
+```bash
+make docker-down
+```
+
+To also remove persisted Datomic volume:
+
+```bash
+make clean
+```
+
+## Default Seed Users
+
+- `admin@admin.com` / `adminPass`
+- `jane@user.com` / `userPass`
+- `otp@bank.com` / `bankPass`
+
+
 ## Roles
 
 - `user`
@@ -52,33 +117,9 @@ Primary profile fields:
 Notes:
 - For `admin` and `bank` profile screen, optional fields (`dateOfBirth`, `maritalStatus`, `yearsWorking`, `industry`) are hidden in UI.
 - When profile `name` is updated, header display updates immediately.
+## API and Backend Details
 
-## Running Locally
-
-You can run the project with either:
-- `Makefile` helpers (recommended)
-- direct commands
-
-### 1) Backend
-
-```bash
-cd backend
-cp .env.example .env
-# set JWT_SECRET in .env
-lein ring server-headless
-```
-
-Backend runs on `http://localhost:3000` by default.
-
-### 2) Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs on `http://localhost:3001`.
+See `backend/README.md` for endpoint-level documentation and backend configuration details.
 
 ### Makefile Commands
 
@@ -97,49 +138,3 @@ Other useful commands:
 make test-backend
 make lint-frontend
 ```
-
-## Running with Docker
-
-### Prerequisites
-
-- Docker Desktop (or Docker Engine + Compose plugin)
-
-### Start project in Docker
-
-From project root:
-
-```bash
-make docker-up
-```
-
-or directly:
-
-```bash
-docker compose up --build
-```
-
-Services:
-- Frontend: `http://localhost:3001`
-- Backend: `http://localhost:3000`
-
-### Stop Docker project
-
-```bash
-make docker-down
-```
-
-To also remove persisted Datomic volume:
-
-```bash
-make clean
-```
-
-## Default Seed Users
-
-- `admin@admin.com` / `adminPass`
-- `jane@user.com` / `userPass`
-- `otp@bank.com` / `bankPass`
-
-## API and Backend Details
-
-See `backend/README.md` for endpoint-level documentation and backend configuration details.
