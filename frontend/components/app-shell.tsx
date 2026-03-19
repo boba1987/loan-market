@@ -34,7 +34,6 @@ export function AppShell({
     { href: "/profile", label: "Profile", roles: ["user", "bank", "admin"] },
     { href: "/users", label: "Users", roles: ["admin"] },
     { href: "/submit-application", label: "Submit Application", roles: ["user"] },
-    { href: "/admin-credit-applications", label: "Admin Applications", roles: ["admin"] },
   ].filter((l) => l.roles.includes(auth.role));
 
   return (

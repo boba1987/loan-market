@@ -50,6 +50,7 @@ export default function LoanApplicationsPage() {
   const [data, setData] = useState<ApplicationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submittingFor, setSubmittingFor] = useState<number | null>(null);
+  const [pendingDeleteApplicationId, setPendingDeleteApplicationId] = useState<number | null>(null);
   const [offerForm, setOfferForm] = useState<Record<number, { interestRate: string; repaymentPeriod: string }>>({});
 
   const endpoint = useMemo(() => {
@@ -95,6 +96,17 @@ export default function LoanApplicationsPage() {
       setError(err instanceof Error ? err.message : "Failed to submit offer");
     } finally {
       setSubmittingFor(null);
+    }
+  };
+
+  const deleteApplication = async (applicationId: number) => {
+    if (!auth || auth.role !== "admin") return;
+    setError(null);
+    try {
+      await apiFetch(`/api/admin/credit-applications/${applicationId}`, { method: "DELETE" }, auth);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete application");
     }
   };
 
@@ -191,6 +203,13 @@ export default function LoanApplicationsPage() {
                 ) : (
                   <p className="text-sm text-zinc-600">No offers yet.</p>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setPendingDeleteApplicationId(app.id)}
+                  className="mt-3 rounded bg-red-600 px-3 py-2 text-sm text-white transition-colors hover:bg-red-700"
+                >
+                  Delete Application
+                </button>
               </div>
             ) : null}
 
@@ -213,6 +232,35 @@ export default function LoanApplicationsPage() {
           </section>
         ))}
       </div>
+      {pendingDeleteApplicationId != null ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md rounded bg-white p-5 shadow-lg">
+            <h2 className="mb-2 text-lg font-semibold">Confirm delete</h2>
+            <p className="mb-4 text-sm text-zinc-700">
+              Delete application ID {pendingDeleteApplicationId}? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDeleteApplicationId(null)}
+                className="rounded border px-3 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void deleteApplication(pendingDeleteApplicationId);
+                  setPendingDeleteApplicationId(null);
+                }}
+                className="rounded bg-red-600 px-3 py-2 text-sm text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </AppShell>
   );
 }
