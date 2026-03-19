@@ -19,5 +19,13 @@
       (fact "role filter works for banks"
         (let [banks (user/list-users conn {:role "bank"})]
           (pos? (count banks)) => true
-          (every? #(= (:role %) "bank") banks) => true)))))
+          (every? #(= (:role %) "bank") banks) => true))
+
+      (fact "create! rejects duplicate user email"
+        (try
+          (user/create! conn "jane@user.com" "somePass" "user")
+          false
+          (catch clojure.lang.ExceptionInfo e
+            (= "User already exists" (.getMessage e))))
+        => true))))
 

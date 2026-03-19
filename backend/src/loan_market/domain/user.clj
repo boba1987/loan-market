@@ -60,7 +60,10 @@
    (create! conn email plain-password role {}))
   ([conn email plain-password role
     {:keys [name dateOfBirth married yearsWorking industry]}]
-   (let [tx (cond-> {:user/email         (str email)
+   (let [email (str email)]
+     (when (eid-by-email conn email)
+       (throw (ex-info "User already exists" {:email email})))
+     (let [tx (cond-> {:user/email         email
                      :user/password-hash (hash-password plain-password)
                      :user/role          (str role)}
               name (assoc :user/name (str name))
@@ -72,7 +75,7 @@
               (assoc :user/years-working (Long/parseLong (str yearsWorking)))
               (some? industry)
               (assoc :user/industry (str industry)))]
-     (d/transact conn {:tx-data [tx]}))))
+       (d/transact conn {:tx-data [tx]})))))
 
 (defn update!
   "Update a user by their current email.
