@@ -31,47 +31,56 @@
     :else (throw (ex-info "Invalid numeric field" {:value x}))))
 
 (defn create!
-  "Create a credit application for a user email. Payload keys can be keywords or strings.
-   Expects dateOfBirth as ISO YYYY-MM-DD string."
+  "Create a credit application for a user email.
+   Required payload keys: amount, income/yearlyIncome, debt.
+
+   The remaining credit-application fields (name/email/dateOfBirth/married/yearsWorking/industry)
+   are copied from the authenticated user's Datomic profile."
   [conn email payload]
   (let [payload (cond-> payload
                    ;; Accept `income` as alias for `yearlyIncome`
                    (and (nil? (body-val payload :yearlyIncome))
                         (some? (body-val payload :income)))
                    (assoc :yearlyIncome (body-val payload :income)))]
-    (require-fields! payload [:name
-                              :email
-                              :amount
-                              :yearlyIncome
-                              :debt
-                              :dateOfBirth
-                              :married
-                              :yearsWorking
-                              :industry])
-  (let [user-eid (or (user/eid-by-email conn email)
-                     (throw (ex-info "User not found" {:email (str email)})))
-        dob (str (body-val payload :dateOfBirth))]
-    (when-not (re-matches dob-re dob)
-      (throw (ex-info "dateOfBirth must be YYYY-MM-DD" {:dateOfBirth dob})))
-    (let [tx-base {:credit-application/user            user-eid
-              :credit-application/name            (str (body-val payload :name))
-              :credit-application/email           (str (body-val payload :email))
-              :credit-application/amount          (parse-double* (body-val payload :amount))
-              :credit-application/yearlyIncome   (parse-double* (body-val payload :yearlyIncome))
-              :credit-application/debt            (parse-double* (body-val payload :debt))
-              :credit-application/date-of-birth   dob
-              :credit-application/married         (boolean (body-val payload :married))
-              :credit-application/years-working   (parse-long* (body-val payload :yearsWorking))
-              :credit-application/industry        (str (body-val payload :industry))
-              :credit-application/created-at      (java.util.Date.)}
-          years-experience (body-val payload :yearsExperience)
-          tx (cond-> tx-base
-               (some? years-experience)
-               (assoc :credit-application/years-experience (parse-long* years-experience)))
-          tempid (str (java.util.UUID/randomUUID))
-          res (d/transact conn {:tx-data [(assoc tx :db/id tempid)]})
-          eid (get (:tempids res) tempid)]
-      {:id eid}))))
+    (require-fields! payload [:amount :yearlyIncome :debt])
+    (let [u        (or (user/find-by-email conn email)
+                       (throw (ex-info "User not found" {:email (str email)})))
+          user-eid (or (user/eid-by-email conn email)
+                        (throw (ex-info "User not found" {:email (str email)})))
+          ;; Profile fields required for creating a credit application.
+          dob       (:user/date-of-birth u)
+          married   (:user/married u)
+          yearsWork (:user/years-working u)
+          industry  (:user/industry u)]
+      (when (or (nil? dob) (and (string? dob) (str/blank? dob)))
+        (throw (ex-info "Missing required field" {:field "dateOfBirth"})))
+      (when-not (re-matches dob-re (str dob))
+        (throw (ex-info "dateOfBirth must be YYYY-MM-DD" {:dateOfBirth (str dob)})))
+      (when (nil? married)
+        (throw (ex-info "Missing required field" {:field "married"})))
+      (when (nil? yearsWork)
+        (throw (ex-info "Missing required field" {:field "yearsWorking"})))
+      (when (or (nil? industry) (and (string? industry) (str/blank? industry)))
+        (throw (ex-info "Missing required field" {:field "industry"})))
+      (let [tx-base {:credit-application/user            user-eid
+                      :credit-application/name            (:user/name u)
+                      :credit-application/email           (:user/email u)
+                      :credit-application/amount          (parse-double* (body-val payload :amount))
+                      :credit-application/yearlyIncome   (parse-double* (body-val payload :yearlyIncome))
+                      :credit-application/debt            (parse-double* (body-val payload :debt))
+                      :credit-application/date-of-birth   (str dob)
+                      :credit-application/married         married
+                      :credit-application/years-working   yearsWork
+                      :credit-application/industry        (str industry)
+                      :credit-application/created-at      (java.util.Date.)}
+            years-experience (body-val payload :yearsExperience)
+            tx (cond-> tx-base
+                 (some? years-experience)
+                 (assoc :credit-application/years-experience (parse-long* years-experience)))
+            tempid (str (java.util.UUID/randomUUID))
+            res (d/transact conn {:tx-data [(assoc tx :db/id tempid)]})
+            eid (get (:tempids res) tempid)]
+        {:id eid}))))
 
 (defn list-by-user
   "List applications for a user email with offset pagination.
