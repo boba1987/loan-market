@@ -82,14 +82,14 @@ These are for local development only. Change or disable them in production.
   - `GET /` – Hello world.
   - `POST /api/login` – Body `{"email":"...","password":"..."}`. Returns `{"token":"...","role":"user"|"bank"|"admin","name":"...","email":"..."}`.
 - **Authenticated (User)** – Send `Authorization: Bearer <token>`.
-  - `GET /api/user/me` – Current user info. Includes `role`, `name`, `email`, and user profile fields: `dateOfBirth`, `married`, `yearsWorking`, `industry`.
+  - `GET /api/user/me` – Current user info. Includes `role`, `name`, `email`, and user profile fields: `dateOfBirth`, `maritalStatus`, `yearsWorking`, `industry`.
   - `POST /api/user/credit-applications` – Submit a credit application (authenticated). `dateOfBirth` must be `YYYY-MM-DD`.
   - `GET /api/user/credit-applications?page=1&pageSize=20` – List your credit applications with offset pagination.
 - **Authenticated (Admin)** – Same header, role must be `admin`.
-  - `GET /api/admin/users` – Returns `{"users":[{"id":123,"email":"...","name":"...","role":"...","dateOfBirth":"...","married":true,"yearsWorking":7,"industry":"Software"}]}`. Optional query param: `?role=admin` (or `bank` / `user`).
-  - `POST /api/admin/users` – Body `{"email":"...","password":"...","role":"user"|"bank"|"admin","name":"..."}` (optionally also `dateOfBirth`,`married`,`yearsWorking`,`industry`). Creates a new user.
+  - `GET /api/admin/users` – Returns `{"users":[{"id":123,"email":"...","name":"...","role":"...","dateOfBirth":"...","maritalStatus":"married","yearsWorking":7,"industry":"Software"}]}`. Optional query param: `?role=admin` (or `bank` / `user`).
+  - `POST /api/admin/users` – Body `{"email":"...","password":"...","role":"user"|"bank"|"admin","name":"..."}` (optionally also `dateOfBirth`,`maritalStatus`,`yearsWorking`,`industry`). Creates a new user.
   - `PUT /api/admin/users/:id` – Body may include `{"email":"...","password":"...","role":"...","name":"..."}`
-    (optionally also `dateOfBirth`,`married`,`yearsWorking`,`industry`). Updates the user.
+    (optionally also `dateOfBirth`,`maritalStatus`,`yearsWorking`,`industry`). Updates the user.
   - `DELETE /api/admin/users/:id` – Deletes the user by Datomic user id (`:id`).
   - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination. Each item includes:
     - `offers`: an array of offers across all banks, e.g. `{"bankName":"OTP Bank","bankEmail":"otp@bank.com","interestRate":4.25,"repaymentPeriod":60}` (empty if no offers yet).

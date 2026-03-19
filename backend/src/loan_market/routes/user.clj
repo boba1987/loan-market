@@ -23,7 +23,9 @@
                                    :name         (:user/name u)
                                    :email        (:user/email u)
                                    :dateOfBirth  (:user/date-of-birth u)
-                                   :married      (:user/married u)
+                                  :maritalStatus (or (:user/marital-status u)
+                                                     (when (contains? u :user/married)
+                                                       (if (:user/married u) "married" "not married")))
                                    :yearsWorking (:user/years-working u)
                                    :industry     (:user/industry u)})
              (response/content-type "application/json")))))
@@ -35,14 +37,14 @@
                email (:auth/email req)
                name (body-val body :name)
                dateOfBirth (body-val body :dateOfBirth)
-               married (body-val body :married)
+               maritalStatus (body-val body :maritalStatus)
                yearsWorking (body-val body :yearsWorking)
                industry (body-val body :industry)]
-           (when (and (nil? name) (nil? dateOfBirth) (nil? married) (nil? yearsWorking) (nil? industry))
-             (throw (ex-info "At least one of name, dateOfBirth, married, yearsWorking, industry is required" {})))
+          (when (and (nil? name) (nil? dateOfBirth) (nil? maritalStatus) (nil? yearsWorking) (nil? industry))
+            (throw (ex-info "At least one of name, dateOfBirth, maritalStatus, yearsWorking, industry is required" {})))
            (user/update! conn email {:name name
                                      :dateOfBirth dateOfBirth
-                                     :married married
+                                    :maritalStatus maritalStatus
                                      :yearsWorking yearsWorking
                                      :industry industry})
            (let [u (user/find-by-email conn email)]
@@ -50,7 +52,9 @@
                                      :name         (:user/name u)
                                      :email        (:user/email u)
                                      :dateOfBirth  (:user/date-of-birth u)
-                                     :married      (:user/married u)
+                                    :maritalStatus (or (:user/marital-status u)
+                                                       (when (contains? u :user/married)
+                                                         (if (:user/married u) "married" "not married")))
                                      :yearsWorking (:user/years-working u)
                                      :industry     (:user/industry u)
                                      :updated      true})

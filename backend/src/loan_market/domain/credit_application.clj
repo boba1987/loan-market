@@ -4,6 +4,23 @@
             [loan-market.domain.user :as user]))
 
 (def ^:private dob-re #"^\d{4}-\d{2}-\d{2}$")
+(def ^:private allowed-marital-statuses
+  #{"not married" "married" "divorced" "other"})
+
+(defn- marital-status-from-user [u]
+  (let [status (:user/marital-status u)]
+    (when (some? status)
+      (let [v (str/lower-case (str/trim (str status)))]
+        (when-not (contains? allowed-marital-statuses v)
+          (throw (ex-info "Invalid maritalStatus"
+                          {:field "maritalStatus"
+                           :allowed (sort allowed-marital-statuses)})))
+        v))))
+
+(defn- marital-status-from-application [m]
+  (or (:credit-application/marital-status m)
+      (when (contains? m :credit-application/married)
+        (if (:credit-application/married m) "married" "not married"))))
 
 (defn- body-val [m k]
   (or (get m k) (get m (name k))))
@@ -34,7 +51,7 @@
   "Create a credit application for a user email.
    Required payload keys: amount, income/yearlyIncome, debt.
 
-   The remaining credit-application fields (name/email/dateOfBirth/married/yearsWorking/industry)
+   The remaining credit-application fields (name/email/dateOfBirth/maritalStatus/yearsWorking/industry)
    are copied from the authenticated user's Datomic profile."
   [conn email payload]
   (let [payload (cond-> payload
@@ -49,30 +66,29 @@
                         (throw (ex-info "User not found" {:email (str email)})))
           ;; Profile fields required for creating a credit application.
           dob       (:user/date-of-birth u)
-          married   (:user/married u)
+          marital-status (marital-status-from-user u)
           yearsWork (:user/years-working u)
           industry  (:user/industry u)]
       (when (or (nil? dob) (and (string? dob) (str/blank? dob)))
         (throw (ex-info "Missing required field" {:field "dateOfBirth"})))
       (when-not (re-matches dob-re (str dob))
         (throw (ex-info "dateOfBirth must be YYYY-MM-DD" {:dateOfBirth (str dob)})))
-      (when (nil? married)
-        (throw (ex-info "Missing required field" {:field "married"})))
       (when (nil? yearsWork)
         (throw (ex-info "Missing required field" {:field "yearsWorking"})))
       (when (or (nil? industry) (and (string? industry) (str/blank? industry)))
         (throw (ex-info "Missing required field" {:field "industry"})))
-      (let [tx-base {:credit-application/user            user-eid
-                      :credit-application/name            (:user/name u)
-                      :credit-application/email           (:user/email u)
-                      :credit-application/amount          (parse-double* (body-val payload :amount))
-                      :credit-application/yearlyIncome   (parse-double* (body-val payload :yearlyIncome))
-                      :credit-application/debt            (parse-double* (body-val payload :debt))
-                      :credit-application/date-of-birth   (str dob)
-                      :credit-application/married         married
-                      :credit-application/years-working   yearsWork
-                      :credit-application/industry        (str industry)
-                      :credit-application/created-at      (java.util.Date.)}
+      (let [tx-base (cond-> {:credit-application/user          user-eid
+                             :credit-application/name          (:user/name u)
+                             :credit-application/email         (:user/email u)
+                             :credit-application/amount        (parse-double* (body-val payload :amount))
+                             :credit-application/yearlyIncome  (parse-double* (body-val payload :yearlyIncome))
+                             :credit-application/debt          (parse-double* (body-val payload :debt))
+                             :credit-application/date-of-birth (str dob)
+                             :credit-application/years-working yearsWork
+                             :credit-application/industry      (str industry)
+                             :credit-application/created-at    (java.util.Date.)}
+                      (some? marital-status)
+                      (assoc :credit-application/marital-status marital-status))
             years-experience (body-val payload :yearsExperience)
             tx (cond-> tx-base
                  (some? years-experience)
@@ -131,6 +147,7 @@
                                         :credit-application/yearlyIncome
                                         :credit-application/debt
                                         :credit-application/date-of-birth
+                                        :credit-application/marital-status
                                         :credit-application/married
                                         :credit-application/years-working
                                         :credit-application/years-experience
@@ -145,7 +162,7 @@
                                  :yearlyIncome  (:credit-application/yearlyIncome m)
                                  :debt          (:credit-application/debt m)
                                  :dateOfBirth   (:credit-application/date-of-birth m)
-                                 :married       (:credit-application/married m)
+                                 :maritalStatus (marital-status-from-application m)
                                  :yearsWorking  (:credit-application/years-working m)
                                   :industry      (:credit-application/industry m)
                                  :offers        offers
@@ -200,6 +217,7 @@
                                          :credit-application/yearlyIncome
                                          :credit-application/debt
                                          :credit-application/date-of-birth
+                                         :credit-application/marital-status
                                          :credit-application/married
                                          :credit-application/years-working
                                          :credit-application/years-experience
@@ -214,7 +232,7 @@
                                   :yearlyIncome  (:credit-application/yearlyIncome m)
                                   :debt          (:credit-application/debt m)
                                   :dateOfBirth   (:credit-application/date-of-birth m)
-                                  :married       (:credit-application/married m)
+                                  :maritalStatus (marital-status-from-application m)
                                   :yearsWorking  (:credit-application/years-working m)
                                   :industry      (:credit-application/industry m)
                                   :offers        offers
@@ -265,6 +283,7 @@
                                          :credit-application/yearlyIncome
                                          :credit-application/debt
                                          :credit-application/date-of-birth
+                                         :credit-application/marital-status
                                          :credit-application/married
                                          :credit-application/years-working
                                          :credit-application/years-experience
@@ -279,7 +298,7 @@
                                   :yearlyIncome  (:credit-application/yearlyIncome m)
                                   :debt          (:credit-application/debt m)
                                   :dateOfBirth   (:credit-application/date-of-birth m)
-                                  :married       (:credit-application/married m)
+                                  :maritalStatus (marital-status-from-application m)
                                   :yearsWorking  (:credit-application/years-working m)
                                   :industry      (:credit-application/industry m)
                                   :createdAt     (some-> (:credit-application/created-at m) (.getTime))}

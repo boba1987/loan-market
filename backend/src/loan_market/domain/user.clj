@@ -21,6 +21,7 @@
     (when eid
       (d/pull db '[:user/password-hash
                     :user/date-of-birth
+                    :user/marital-status
                     :user/married
                     :user/years-working
                     :user/industry
@@ -36,6 +37,7 @@
       (d/pull db '[:db/id
                   :user/password-hash
                    :user/date-of-birth
+                   :user/marital-status
                    :user/married
                    :user/years-working
                    :user/industry
@@ -52,6 +54,23 @@
   [plain]
   (hashers/derive plain))
 
+(def ^:private allowed-marital-statuses
+  #{"not married" "married" "divorced" "other"})
+
+(defn- normalize-marital-status [value]
+  (when (some? value)
+    (let [v (str/lower-case (str/trim (str value)))]
+      (when-not (contains? allowed-marital-statuses v)
+        (throw (ex-info "Invalid maritalStatus"
+                        {:field "maritalStatus"
+                         :allowed (sort allowed-marital-statuses)})))
+      v)))
+
+(defn- marital-status-from-user [u]
+  (or (:user/marital-status u)
+      (when (contains? u :user/married)
+        (if (:user/married u) "married" "not married"))))
+
 (declare update-by-eid! delete-by-eid!)
 
 (defn create!
@@ -59,18 +78,19 @@
   ([conn email plain-password role]
    (create! conn email plain-password role {}))
   ([conn email plain-password role
-    {:keys [name dateOfBirth married yearsWorking industry]}]
+    {:keys [name dateOfBirth maritalStatus yearsWorking industry]}]
    (let [email (str email)]
      (when (eid-by-email conn email)
        (throw (ex-info "User already exists" {:email email})))
-     (let [tx (cond-> {:user/email         email
-                     :user/password-hash (hash-password plain-password)
-                     :user/role          (str role)}
+     (let [status (normalize-marital-status maritalStatus)
+           tx (cond-> {:user/email         email
+                       :user/password-hash (hash-password plain-password)
+                       :user/role          (str role)}
               name (assoc :user/name (str name))
               (and (some? dateOfBirth) (not (str/blank? (str dateOfBirth))))
               (assoc :user/date-of-birth (str dateOfBirth))
-              (some? married)
-              (assoc :user/married married)
+              (some? status)
+              (assoc :user/marital-status status)
               (some? yearsWorking)
               (assoc :user/years-working (Long/parseLong (str yearsWorking)))
               (some? industry)
@@ -80,10 +100,10 @@
 (defn update!
   "Update a user by their current email.
   Supported keys: :password (plain), :role, :name, :email (new email),
-  plus optional profile fields: :dateOfBirth, :married, :yearsWorking, :industry.
+  plus optional profile fields: :dateOfBirth, :maritalStatus, :yearsWorking, :industry.
    Throws ex-info if the user doesn't exist."
   [conn current-email
-   {:keys [password role name email dateOfBirth married yearsWorking industry]}]
+   {:keys [password role name email dateOfBirth maritalStatus yearsWorking industry]}]
   (let [eid (eid-by-email conn current-email)]
     (when-not eid
       (throw (ex-info "User not found" {:email (str current-email)})))
@@ -92,29 +112,30 @@
                               :name name
                               :email email
                               :dateOfBirth dateOfBirth
-                              :married married
+                              :maritalStatus maritalStatus
                               :yearsWorking yearsWorking
                               :industry industry})))
 
 (defn update-by-eid!
   "Update a user by Datomic entity id."
-  [conn eid {:keys [password role name email dateOfBirth married yearsWorking industry]}]
+  [conn eid {:keys [password role name email dateOfBirth maritalStatus yearsWorking industry]}]
   (let [db (d/db conn)]
     (when-not (d/pull db '[:db/id] eid)
       (throw (ex-info "User not found" {:id eid})))
-    (let [tx-data (cond-> {:db/id eid}
-                  password (assoc :user/password-hash (hash-password password))
-                  role     (assoc :user/role (str role))
-                  name     (assoc :user/name (str name))
-                  email    (assoc :user/email (str email))
-                  (and (some? dateOfBirth) (not (str/blank? (str dateOfBirth))))
-                  (assoc :user/date-of-birth (str dateOfBirth))
-                  (some? married)
-                  (assoc :user/married married)
-                  (some? yearsWorking)
-                  (assoc :user/years-working (Long/parseLong (str yearsWorking)))
-                  (some? industry)
-                  (assoc :user/industry (str industry)))]
+    (let [status (normalize-marital-status maritalStatus)
+          tx-data (cond-> {:db/id eid}
+                    password (assoc :user/password-hash (hash-password password))
+                    role     (assoc :user/role (str role))
+                    name     (assoc :user/name (str name))
+                    email    (assoc :user/email (str email))
+                    (and (some? dateOfBirth) (not (str/blank? (str dateOfBirth))))
+                    (assoc :user/date-of-birth (str dateOfBirth))
+                    (some? status)
+                    (assoc :user/marital-status status)
+                    (some? yearsWorking)
+                    (assoc :user/years-working (Long/parseLong (str yearsWorking)))
+                    (some? industry)
+                    (assoc :user/industry (str industry)))]
       (d/transact conn {:tx-data [tx-data]}))))
 
 (defn delete-by-eid!
@@ -124,6 +145,7 @@
         u  (d/pull db '[:db/id
                         :user/password-hash
                         :user/date-of-birth
+                        :user/marital-status
                         :user/married
                         :user/years-working
                         :user/industry
@@ -138,6 +160,8 @@
                   (:user/email u) (conj [:db/retract eid :user/email (:user/email u)])
                   (some? (:user/date-of-birth u))
                   (conj [:db/retract eid :user/date-of-birth (:user/date-of-birth u)])
+                  (some? (:user/marital-status u))
+                  (conj [:db/retract eid :user/marital-status (:user/marital-status u)])
                   (some? (:user/married u))
                   (conj [:db/retract eid :user/married (:user/married u)])
                   (some? (:user/years-working u))
@@ -180,6 +204,7 @@
                                 :user/name
                                 :user/email
                                 :user/date-of-birth
+                                :user/marital-status
                                 :user/married
                                 :user/years-working
                                 :user/industry]
@@ -189,7 +214,7 @@
                :name          (:user/name u)
                :role          (:user/role u)
                :dateOfBirth  (:user/date-of-birth u)
-               :married       (:user/married u)
+               :maritalStatus (marital-status-from-user u)
                :yearsWorking  (:user/years-working u)
                :industry      (:user/industry u)}))
            eids))))

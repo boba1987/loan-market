@@ -22,7 +22,7 @@
                         :yearlyIncome 50000
                         :debt 2000
                         :dateOfBirth "1990-01-30"
-                        :married true
+                        :maritalStatus "married"
                         :yearsWorking 7
                         :yearsExperience 5
                         :industry "Software"})]
@@ -52,7 +52,7 @@
                           :yearlyIncome 50000
                           :debt 2000
                           :dateOfBirth "1990-01-30"
-                          :married true
+                          :maritalStatus "married"
                           :yearsWorking 7
                           :yearsExperience 5
                           :industry "Software"})

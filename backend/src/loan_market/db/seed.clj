@@ -8,7 +8,7 @@
    {:email "jane@user.com" :password "userPass" :role "user"
     :name "Jane Doe"
     :dateOfBirth "1990-01-30"
-    :married true
+    :maritalStatus "married"
     :yearsWorking 7
     :industry "Software"}
    {:email "admin@admin.com" :password "adminPass" :role "admin"
@@ -31,7 +31,7 @@
           (user/create! conn (:email s) (:password s) (:role s)
                          {:name (:name s)
                           :dateOfBirth (:dateOfBirth s)
-                          :married (:married s)
+                          :maritalStatus (:maritalStatus s)
                           :yearsWorking (:yearsWorking s)
                           :industry (:industry s)}))))
 
@@ -42,7 +42,7 @@
             (or (nil? (:user/name u))
                 (nil? (:user/email u))
                 (and (some? (:dateOfBirth s)) (nil? (:user/date-of-birth u)))
-                (and (some? (:married s)) (nil? (:user/married u)))
+                (and (some? (:maritalStatus s)) (nil? (:user/marital-status u)))
                 (and (some? (:yearsWorking s)) (nil? (:user/years-working u)))
                 (and (some? (:industry s)) (nil? (:user/industry u))))]
         (when needs?
@@ -50,7 +50,7 @@
                          {:name (:name s)
                           :email (:email s)
                           :dateOfBirth (:dateOfBirth s)
-                          :married (:married s)
+                          :maritalStatus (:maritalStatus s)
                           :yearsWorking (:yearsWorking s)
                           :industry (:industry s)}))))
 
@@ -65,7 +65,7 @@
            :income 50000
            :debt 2000
            :dateOfBirth "1990-01-30"
-           :married true
+           :maritalStatus "married"
            :yearsWorking 7
            :amount 10000
            :industry "Software"})))

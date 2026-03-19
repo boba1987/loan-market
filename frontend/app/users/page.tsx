@@ -12,7 +12,7 @@ type UserRecord = {
   name: string;
   role: "user" | "bank" | "admin";
   dateOfBirth?: string | null;
-  married?: boolean | null;
+  maritalStatus?: "not married" | "married" | "divorced" | "other" | null;
   yearsWorking?: number | null;
   industry?: string | null;
 };
@@ -28,7 +28,7 @@ export default function UsersPage() {
         name: string;
         role: "user" | "bank" | "admin";
         dateOfBirth: string;
-        married: "" | "true" | "false";
+        maritalStatus: "" | "not married" | "married" | "divorced" | "other";
         yearsWorking: string;
         industry: string;
       }
@@ -47,7 +47,7 @@ export default function UsersPage() {
     role: "user",
     name: "",
     dateOfBirth: "",
-    married: "",
+    maritalStatus: "",
     yearsWorking: "",
     industry: "",
   });
@@ -69,7 +69,7 @@ export default function UsersPage() {
               name: u.name ?? "",
               role: u.role,
               dateOfBirth: u.dateOfBirth ?? "",
-              married: (u.married == null ? "" : String(Boolean(u.married))) as "" | "true" | "false",
+              maritalStatus: (u.maritalStatus ?? "") as "" | "not married" | "married" | "divorced" | "other",
               yearsWorking: u.yearsWorking != null ? String(u.yearsWorking) : "",
               industry: u.industry ?? "",
             },
@@ -108,7 +108,6 @@ export default function UsersPage() {
         (createForm.password !== createForm.confirmPassword ? "Passwords do not match" : undefined),
       name: required(createForm.name, "Name") ?? undefined,
       dateOfBirth: createForm.dateOfBirth ? isoDateError(createForm.dateOfBirth, "Date of birth") ?? undefined : undefined,
-      married: required(createForm.married, "Married") ?? undefined,
       yearsWorking: createForm.yearsWorking ? numberError(createForm.yearsWorking, "Years working", { min: 0 }) ?? undefined : undefined,
       industry: createForm.industry ? undefined : undefined,
     };
@@ -123,7 +122,7 @@ export default function UsersPage() {
           role: createForm.role,
           name: createForm.name || undefined,
           dateOfBirth: createForm.dateOfBirth || undefined,
-          married: createForm.married === "true",
+          maritalStatus: createForm.maritalStatus || undefined,
           yearsWorking: createForm.yearsWorking ? Number(createForm.yearsWorking) : undefined,
           industry: createForm.industry || undefined,
         }),
@@ -135,7 +134,7 @@ export default function UsersPage() {
         role: "user",
         name: "",
         dateOfBirth: "",
-        married: "",
+        maritalStatus: "",
         yearsWorking: "",
         industry: "",
       });
@@ -178,7 +177,7 @@ export default function UsersPage() {
             name: form.name,
             role: form.role,
             dateOfBirth: form.dateOfBirth || undefined,
-            married: form.married === "true",
+            maritalStatus: form.maritalStatus || undefined,
             yearsWorking: form.yearsWorking ? Number(form.yearsWorking) : undefined,
             industry: form.industry || undefined,
           }),
@@ -246,16 +245,17 @@ export default function UsersPage() {
           </div>
           <div>
             <label className="text-xs font-medium">
-              Married
-              <select className="mt-1 w-full rounded border px-2 py-2" value={createForm.married} onChange={(e) => setCreateForm((p) => ({ ...p, married: e.target.value }))}>
+              Marital status
+              <select className="mt-1 w-full rounded border px-2 py-2" value={createForm.maritalStatus} onChange={(e) => setCreateForm((p) => ({ ...p, maritalStatus: e.target.value }))}>
                 <option value="" disabled>
                   Select...
                 </option>
-                <option value="true">true</option>
-                <option value="false">false</option>
+                <option value="not married">not married</option>
+                <option value="married">married</option>
+                <option value="divorced">divorced</option>
+                <option value="other">other</option>
               </select>
             </label>
-            {createErrors.married ? <p className="mt-1 text-xs text-red-600">{createErrors.married}</p> : null}
           </div>
           <div>
             <label className="text-xs font-medium">
@@ -352,20 +352,22 @@ export default function UsersPage() {
                 </label>
                 {editErrors[u.id]?.dateOfBirth ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.dateOfBirth}</p> : null}
                 <label className="text-xs font-medium">
-                  Married
+                  Marital status
                   <select
                     className="mt-1 w-full rounded border px-2 py-1"
-                    value={editForms[u.id]?.married ?? ""}
+                    value={editForms[u.id]?.maritalStatus ?? ""}
                     onChange={(e) =>
                       setEditForms((prev) => ({
                         ...prev,
-                        [u.id]: { ...prev[u.id], married: e.target.value as "" | "true" | "false" },
+                        [u.id]: { ...prev[u.id], maritalStatus: e.target.value as "" | "not married" | "married" | "divorced" | "other" },
                       }))
                     }
                   >
                     <option value="">Select...</option>
-                    <option value="true">true</option>
-                    <option value="false">false</option>
+                    <option value="not married">not married</option>
+                    <option value="married">married</option>
+                    <option value="divorced">divorced</option>
+                    <option value="other">other</option>
                   </select>
                 </label>
                 <label className="text-xs font-medium">

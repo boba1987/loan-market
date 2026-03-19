@@ -35,8 +35,8 @@
    {:db/ident       :user/date-of-birth
     :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}
-   {:db/ident       :user/married
-    :db/valueType   :db.type/boolean
+   {:db/ident       :user/marital-status
+    :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}
    {:db/ident       :user/years-working
     :db/valueType   :db.type/long
@@ -67,8 +67,8 @@
    {:db/ident       :credit-application/date-of-birth
     :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}
-   {:db/ident       :credit-application/married
-    :db/valueType   :db.type/boolean
+   {:db/ident       :credit-application/marital-status
+    :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}
    {:db/ident       :credit-application/years-working
     :db/valueType   :db.type/long

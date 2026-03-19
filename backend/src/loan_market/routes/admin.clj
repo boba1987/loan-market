@@ -32,14 +32,14 @@
      (fn [req]
        (try
          (let [body     (:body req)
-               password (or (body-val body :password) (body-val body "password"))
-               role     (or (body-val body :role) (body-val body "role"))
-               name     (or (body-val body :name) (body-val body "name"))
-              email    (or (body-val body :email) (body-val body "email"))
-              dateOfBirth (or (body-val body :dateOfBirth) (body-val body "dateOfBirth"))
-              married     (or (body-val body :married) (body-val body "married"))
-              yearsWorking (or (body-val body :yearsWorking) (body-val body "yearsWorking"))
-              industry     (or (body-val body :industry) (body-val body "industry"))]
+              password (body-val body :password)
+              role     (body-val body :role)
+              name     (body-val body :name)
+              email    (body-val body :email)
+              dateOfBirth (body-val body :dateOfBirth)
+              maritalStatus (body-val body :maritalStatus)
+              yearsWorking (body-val body :yearsWorking)
+              industry     (body-val body :industry)]
            (when (or (or (nil? email) (str/blank? (str email)))
                      (nil? password)
                      (nil? role))
@@ -47,7 +47,7 @@
                              {:field "email/password/role"})))
           (user/create! conn email password role {:name name
                                                   :dateOfBirth dateOfBirth
-                                                  :married married
+                                                  :maritalStatus maritalStatus
                                                   :yearsWorking yearsWorking
                                                   :industry industry})
            (let [eid (user/eid-by-email conn email)
@@ -57,7 +57,9 @@
                                        :name (:user/name u)
                                       :role (:user/role u)
                                       :dateOfBirth (:user/date-of-birth u)
-                                      :married (:user/married u)
+                                      :maritalStatus (or (:user/marital-status u)
+                                                         (when (contains? u :user/married)
+                                                           (if (:user/married u) "married" "not married")))
                                       :yearsWorking (:user/years-working u)
                                       :industry (:user/industry u)})
                  (response/status 201)
@@ -81,12 +83,12 @@
                name     (body-val body :name)
                email    (body-val body :email)
               dateOfBirth (body-val body :dateOfBirth)
-              married     (body-val body :married)
+              maritalStatus (body-val body :maritalStatus)
               yearsWorking (body-val body :yearsWorking)
               industry     (body-val body :industry)
                eid      (Long/parseLong (str id))]
           (when (and (nil? password) (nil? role) (nil? name) (nil? email)
-                     (nil? dateOfBirth) (nil? married) (nil? yearsWorking) (nil? industry))
+                     (nil? dateOfBirth) (nil? maritalStatus) (nil? yearsWorking) (nil? industry))
              (throw (ex-info "At least one of password, role, name, email is required"
                              {:id id})))
           (user/update-by-eid! conn eid {:password password
@@ -94,7 +96,7 @@
                                          :name name
                                          :email email
                                          :dateOfBirth dateOfBirth
-                                         :married married
+                                         :maritalStatus maritalStatus
                                          :yearsWorking yearsWorking
                                          :industry industry})
            (let [u (user/find-by-eid conn eid)]
@@ -103,7 +105,9 @@
                                        :name (:user/name u)
                                       :role (:user/role u)
                                       :dateOfBirth (:user/date-of-birth u)
-                                      :married (:user/married u)
+                                      :maritalStatus (or (:user/marital-status u)
+                                                         (when (contains? u :user/married)
+                                                           (if (:user/married u) "married" "not married")))
                                       :yearsWorking (:user/years-working u)
                                       :industry (:user/industry u)
                                        :updated true})
