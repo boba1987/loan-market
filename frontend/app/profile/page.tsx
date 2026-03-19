@@ -19,6 +19,10 @@ type Profile = Record<string, unknown> | UserProfile;
 
 export default function ProfilePage() {
   const { auth, loading } = useAuthState(true);
+  const role = auth?.role;
+  const token = auth?.token;
+  const email = auth?.email;
+  const name = auth?.name;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -32,12 +36,13 @@ export default function ProfilePage() {
   });
 
   useEffect(() => {
+    const authForApi = token && role && email ? { token, role, email, name } : null;
     const load = async () => {
-      if (!auth) return;
+      if (!authForApi) return;
       setError(null);
       try {
-        if (auth.role === "user") {
-          const p = await apiFetch<UserProfile>("/api/user/me", {}, auth);
+        if (role === "user") {
+          const p = await apiFetch<UserProfile>("/api/user/me", {}, authForApi);
           setProfile(p);
           setForm({
             name: p.name ?? "",
@@ -48,23 +53,23 @@ export default function ProfilePage() {
           });
           return;
         }
-        if (auth.role === "bank") {
-          setProfile(await apiFetch<Profile>("/api/bank/me", {}, auth));
+        if (role === "bank") {
+          setProfile(await apiFetch<Profile>("/api/bank/me", {}, authForApi));
           return;
         }
         const users = await apiFetch<{ users: Array<Record<string, unknown>> }>(
           "/api/admin/users?role=admin",
           {},
-          auth,
+          authForApi,
         );
-        const me = users.users.find((u) => u.email === auth.email) ?? null;
-        setProfile((me as Profile) ?? { role: auth.role, email: auth.email, name: auth.name });
+        const me = users.users.find((u) => u.email === email) ?? null;
+        setProfile((me as Profile) ?? { role, email, name });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load profile");
       }
     };
     void load();
-  }, [auth]);
+  }, [email, name, role, token]);
 
   if (loading || !auth) return <div className="p-4">Loading...</div>;
 

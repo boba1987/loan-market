@@ -78,11 +78,11 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
-    if (auth?.role === "admin") {
+    if (auth?.role === "admin" && auth?.token) {
       void load();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, roleFilter]);
+  }, [auth?.role, auth?.token, auth?.email, roleFilter]);
 
   if (loading || !auth) return <div className="p-4">Loading...</div>;
   if (auth.role !== "admin") {
