@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: loan-market-backend
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      DATOMIC_STORAGE_DIR: /data
+      DATOMIC_DB_NAME: loan-market
+      DATOMIC_SYSTEM: dev
+    volumes:
+      - datomic_data:/data
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: http://backend:3000
+    container_name: loan-market-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_BASE: http://backend:3000
+
+volumes:
+  datomic_data:
