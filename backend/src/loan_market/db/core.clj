@@ -30,6 +30,19 @@
     :db/cardinality :db.cardinality/one}
    {:db/ident       :user/role
     :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   ;; Optional user profile fields (used by /api/user/me).
+   {:db/ident       :user/date-of-birth
+    :db/valueType   :db.type/string
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :user/married
+    :db/valueType   :db.type/boolean
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :user/years-working
+    :db/valueType   :db.type/long
+    :db/cardinality :db.cardinality/one}
+   {:db/ident       :user/industry
+    :db/valueType   :db.type/string
     :db/cardinality :db.cardinality/one}])
 
 (def credit-application-schema

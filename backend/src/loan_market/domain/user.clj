@@ -20,6 +20,10 @@
         eid (eid-by-email conn email)]
     (when eid
       (d/pull db '[:user/password-hash
+                    :user/date-of-birth
+                    :user/married
+                    :user/years-working
+                    :user/industry
                     :user/role
                     :user/name
                     :user/email] eid))))
@@ -31,6 +35,10 @@
     (when eid
       (d/pull db '[:db/id
                   :user/password-hash
+                   :user/date-of-birth
+                   :user/married
+                   :user/years-working
+                   :user/industry
                   :user/role
                   :user/name
                   :user/email] eid))))
@@ -50,29 +58,44 @@
   "Transact a new user. Password must be plain; it will be hashed. Returns tx result."
   ([conn email plain-password role]
    (create! conn email plain-password role {}))
-  ([conn email plain-password role {:keys [name]}]
+  ([conn email plain-password role
+    {:keys [name dateOfBirth married yearsWorking industry]}]
    (let [tx (cond-> {:user/email         (str email)
-                      :user/password-hash (hash-password plain-password)
-                      :user/role          (str role)}
-              name (assoc :user/name (str name)))]
+                     :user/password-hash (hash-password plain-password)
+                     :user/role          (str role)}
+              name (assoc :user/name (str name))
+              (and (some? dateOfBirth) (not (str/blank? (str dateOfBirth))))
+              (assoc :user/date-of-birth (str dateOfBirth))
+              (some? married)
+              (assoc :user/married married)
+              (some? yearsWorking)
+              (assoc :user/years-working (Long/parseLong (str yearsWorking)))
+              (some? industry)
+              (assoc :user/industry (str industry)))]
      (d/transact conn {:tx-data [tx]}))))
 
 (defn update!
   "Update a user by their current email.
-   Supported keys: :password (plain), :role, :name, :email (new email).
+  Supported keys: :password (plain), :role, :name, :email (new email),
+  plus optional profile fields: :dateOfBirth, :married, :yearsWorking, :industry.
    Throws ex-info if the user doesn't exist."
-  [conn current-email {:keys [password role name] :as update}]
+  [conn current-email
+   {:keys [password role name email dateOfBirth married yearsWorking industry]}]
   (let [eid (eid-by-email conn current-email)]
     (when-not eid
       (throw (ex-info "User not found" {:email (str current-email)})))
     (update-by-eid! conn eid {:password password
                               :role role
                               :name name
-                              :email (:email update)})))
+                              :email email
+                              :dateOfBirth dateOfBirth
+                              :married married
+                              :yearsWorking yearsWorking
+                              :industry industry})))
 
 (defn update-by-eid!
   "Update a user by Datomic entity id."
-  [conn eid {:keys [password role name email]}]
+  [conn eid {:keys [password role name email dateOfBirth married yearsWorking industry]}]
   (let [db (d/db conn)]
     (when-not (d/pull db '[:db/id] eid)
       (throw (ex-info "User not found" {:id eid})))
@@ -80,7 +103,15 @@
                   password (assoc :user/password-hash (hash-password password))
                   role     (assoc :user/role (str role))
                   name     (assoc :user/name (str name))
-                  email    (assoc :user/email (str email)))]
+                  email    (assoc :user/email (str email))
+                  (and (some? dateOfBirth) (not (str/blank? (str dateOfBirth))))
+                  (assoc :user/date-of-birth (str dateOfBirth))
+                  (some? married)
+                  (assoc :user/married married)
+                  (some? yearsWorking)
+                  (assoc :user/years-working (Long/parseLong (str yearsWorking)))
+                  (some? industry)
+                  (assoc :user/industry (str industry)))]
       (d/transact conn {:tx-data [tx-data]}))))
 
 (defn delete-by-eid!
@@ -89,6 +120,10 @@
   (let [db (d/db conn)
         u  (d/pull db '[:db/id
                         :user/password-hash
+                        :user/date-of-birth
+                        :user/married
+                        :user/years-working
+                        :user/industry
                         :user/role
                         :user/name
                         :user/email] eid)
@@ -97,7 +132,15 @@
         tx-data (cond-> [[:db/retract eid :user/password-hash (:user/password-hash u)]
                           [:db/retract eid :user/role          (:user/role u)]]
                   (:user/name u)  (conj [:db/retract eid :user/name  (:user/name u)])
-                  (:user/email u) (conj [:db/retract eid :user/email (:user/email u)]) )]
+                  (:user/email u) (conj [:db/retract eid :user/email (:user/email u)])
+                  (some? (:user/date-of-birth u))
+                  (conj [:db/retract eid :user/date-of-birth (:user/date-of-birth u)])
+                  (some? (:user/married u))
+                  (conj [:db/retract eid :user/married (:user/married u)])
+                  (some? (:user/years-working u))
+                  (conj [:db/retract eid :user/years-working (:user/years-working u)])
+                  (some? (:user/industry u))
+                  (conj [:db/retract eid :user/industry (:user/industry u)]))]
     (d/transact conn {:tx-data [tx-data]})))
 
 (defn delete!
@@ -127,10 +170,23 @@
                        :where [?e :user/role ?role]]
                      db-value
                      (str role)))]
-     (mapv (fn [[eid]]
-             (let [u (d/pull db-value '[:db/id :user/role :user/name :user/email] eid)]
-               {:id    (:db/id u)
-                :email (:user/email u)
-                :name  (:user/name u)
-                :role  (:user/role u)}))
+    (mapv (fn [[eid]]
+            (let [u (d/pull db-value
+                              '[:db/id
+                                :user/role
+                                :user/name
+                                :user/email
+                                :user/date-of-birth
+                                :user/married
+                                :user/years-working
+                                :user/industry]
+                              eid)]
+              {:id            (:db/id u)
+               :email         (:user/email u)
+               :name          (:user/name u)
+               :role          (:user/role u)
+               :dateOfBirth  (:user/date-of-birth u)
+               :married       (:user/married u)
+               :yearsWorking  (:user/years-working u)
+               :industry      (:user/industry u)}))
            eids))))

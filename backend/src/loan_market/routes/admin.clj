@@ -6,7 +6,13 @@
             [ring.util.response :as response]))
 
 (defn- body-val [body k]
-  (or (get body k) (get body (name k))))
+  (let [missing ::missing
+        v1 (get body k missing)
+        v2 (get body (name k) missing)]
+    (cond
+      (not= v1 missing) v1
+      (not= v2 missing) v2
+      :else nil)))
 
 (defn admin-routes
   "Admin-only routes. Handler is responsible for wrapping JWT + require-role admin."
@@ -29,19 +35,31 @@
                password (or (body-val body :password) (body-val body "password"))
                role     (or (body-val body :role) (body-val body "role"))
                name     (or (body-val body :name) (body-val body "name"))
-               email    (or (body-val body :email) (body-val body "email"))]
+              email    (or (body-val body :email) (body-val body "email"))
+              dateOfBirth (or (body-val body :dateOfBirth) (body-val body "dateOfBirth"))
+              married     (or (body-val body :married) (body-val body "married"))
+              yearsWorking (or (body-val body :yearsWorking) (body-val body "yearsWorking"))
+              industry     (or (body-val body :industry) (body-val body "industry"))]
            (when (or (or (nil? email) (str/blank? (str email)))
                      (nil? password)
                      (nil? role))
              (throw (ex-info "email, password, role are required"
                              {:field "email/password/role"})))
-           (user/create! conn email password role {:name name})
+          (user/create! conn email password role {:name name
+                                                  :dateOfBirth dateOfBirth
+                                                  :married married
+                                                  :yearsWorking yearsWorking
+                                                  :industry industry})
            (let [eid (user/eid-by-email conn email)
                  u   (user/find-by-eid conn eid)]
              (-> (response/response {:id (:db/id u)
                                        :email (:user/email u)
                                        :name (:user/name u)
-                                       :role (:user/role u)})
+                                      :role (:user/role u)
+                                      :dateOfBirth (:user/date-of-birth u)
+                                      :married (:user/married u)
+                                      :yearsWorking (:user/years-working u)
+                                      :industry (:user/industry u)})
                  (response/status 201)
                  (response/content-type "application/json"))))
          (catch clojure.lang.ExceptionInfo e
@@ -62,16 +80,32 @@
                role     (body-val body :role)
                name     (body-val body :name)
                email    (body-val body :email)
+              dateOfBirth (body-val body :dateOfBirth)
+              married     (body-val body :married)
+              yearsWorking (body-val body :yearsWorking)
+              industry     (body-val body :industry)
                eid      (Long/parseLong (str id))]
-           (when (and (nil? password) (nil? role) (nil? name) (nil? email))
+          (when (and (nil? password) (nil? role) (nil? name) (nil? email)
+                     (nil? dateOfBirth) (nil? married) (nil? yearsWorking) (nil? industry))
              (throw (ex-info "At least one of password, role, name, email is required"
                              {:id id})))
-           (user/update-by-eid! conn eid {:password password :role role :name name :email email})
+          (user/update-by-eid! conn eid {:password password
+                                         :role role
+                                         :name name
+                                         :email email
+                                         :dateOfBirth dateOfBirth
+                                         :married married
+                                         :yearsWorking yearsWorking
+                                         :industry industry})
            (let [u (user/find-by-eid conn eid)]
              (-> (response/response {:id (:db/id u)
                                        :email (:user/email u)
                                        :name (:user/name u)
-                                       :role (:user/role u)
+                                      :role (:user/role u)
+                                      :dateOfBirth (:user/date-of-birth u)
+                                      :married (:user/married u)
+                                      :yearsWorking (:user/years-working u)
+                                      :industry (:user/industry u)
                                        :updated true})
                (response/status 200)
                (response/content-type "application/json"))))

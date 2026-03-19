@@ -29,9 +29,19 @@
            (seed/seed-if-empty! c)
            c)))
 
+(defn- ensure-schema-and-seed!
+  "Ensure schema changes and seed backfills are applied to the already-running connection."
+  [c]
+  (db/ensure-schema! c)
+  (seed/seed-if-empty! c)
+  c)
+
 (defn app
   [x]
   (if (map? x)
-    ((build-app @conn) x)
+    (let [c @conn]
+      (ensure-schema-and-seed! c)
+      ((build-app c) x))
     (fn [request]
+      (ensure-schema-and-seed! x)
       ((build-app x) request))))

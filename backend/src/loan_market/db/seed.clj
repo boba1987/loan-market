@@ -6,7 +6,11 @@
   [{:email "otp@bank.com" :password "bankPass" :role "bank"
     :name "OTP Bank"}
    {:email "jane@user.com" :password "userPass" :role "user"
-    :name "Jane Doe"}
+    :name "Jane Doe"
+    :dateOfBirth "1990-01-30"
+    :married true
+    :yearsWorking 7
+    :industry "Software"}
    {:email "admin@admin.com" :password "adminPass" :role "admin"
     :name "Admin"}])
 
@@ -25,14 +29,30 @@
       (doseq [s seed-users]
         (when-not (user/find-by-email conn (:email s))
           (user/create! conn (:email s) (:password s) (:role s)
-                         {:name (:name s)}))))
+                         {:name (:name s)
+                          :dateOfBirth (:dateOfBirth s)
+                          :married (:married s)
+                          :yearsWorking (:yearsWorking s)
+                          :industry (:industry s)}))))
 
     ;; Ensure seeded profile fields exist even for users created in older DB versions.
     (doseq [s seed-users]
-      (let [u (user/find-by-email conn (:email s))]
-        (when (or (nil? (:user/name u)) (nil? (:user/email u)))
+      (let [u (user/find-by-email conn (:email s))
+            needs?
+            (or (nil? (:user/name u))
+                (nil? (:user/email u))
+                (and (some? (:dateOfBirth s)) (nil? (:user/date-of-birth u)))
+                (and (some? (:married s)) (nil? (:user/married u)))
+                (and (some? (:yearsWorking s)) (nil? (:user/years-working u)))
+                (and (some? (:industry s)) (nil? (:user/industry u))))]
+        (when needs?
           (user/update! conn (:email s)
-                         {:name (:name s) :email (:email s)}))))
+                         {:name (:name s)
+                          :email (:email s)
+                          :dateOfBirth (:dateOfBirth s)
+                          :married (:married s)
+                          :yearsWorking (:yearsWorking s)
+                          :industry (:industry s)}))))
 
     ;; Seed a sample credit application for the default `user` if none exists yet.
     (let [r (credit-application/list-by-user conn "jane@user.com" {:page 1 :pageSize 1})]
