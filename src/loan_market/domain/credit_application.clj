@@ -34,22 +34,26 @@
   "Create a credit application for username. Payload keys can be keywords or strings.
    Expects dateOfBirth as ISO YYYY-MM-DD string."
   [conn username payload]
-  (require-fields! payload [:name
-                            :email
-                            :amount
-                            :yearlyIncome
-                            :debt
-                            :dateOfBirth
-                            :married
-                            :yearsWorking
-                            :yearsExperience
-                            :industry])
+  (let [payload (cond-> payload
+                   ;; Accept `income` as alias for `yearlyIncome`
+                   (and (nil? (body-val payload :yearlyIncome))
+                        (some? (body-val payload :income)))
+                   (assoc :yearlyIncome (body-val payload :income)))]
+    (require-fields! payload [:name
+                              :email
+                              :amount
+                              :yearlyIncome
+                              :debt
+                              :dateOfBirth
+                              :married
+                              :yearsWorking
+                              :industry])
   (let [user-eid (or (user/eid-by-username conn username)
                      (throw (ex-info "User not found" {:username (str username)})))
         dob (str (body-val payload :dateOfBirth))]
     (when-not (re-matches dob-re dob)
       (throw (ex-info "dateOfBirth must be YYYY-MM-DD" {:dateOfBirth dob})))
-    (let [tx {:credit-application/user            user-eid
+    (let [tx-base {:credit-application/user            user-eid
               :credit-application/name            (str (body-val payload :name))
               :credit-application/email           (str (body-val payload :email))
               :credit-application/amount          (parse-double* (body-val payload :amount))
@@ -58,13 +62,16 @@
               :credit-application/date-of-birth   dob
               :credit-application/married         (boolean (body-val payload :married))
               :credit-application/years-working   (parse-long* (body-val payload :yearsWorking))
-              :credit-application/years-experience (parse-long* (body-val payload :yearsExperience))
               :credit-application/industry        (str (body-val payload :industry))
               :credit-application/created-at      (java.util.Date.)}
+          years-experience (body-val payload :yearsExperience)
+          tx (cond-> tx-base
+               (some? years-experience)
+               (assoc :credit-application/years-experience (parse-long* years-experience)))
           tempid (str (java.util.UUID/randomUUID))
           res (d/transact conn {:tx-data [(assoc tx :db/id tempid)]})
           eid (get (:tempids res) tempid)]
-      {:id eid})))
+      {:id eid}))))
 
 (defn list-by-user
   "List applications for username with offset pagination.
@@ -104,18 +111,19 @@
                                         :credit-application/industry
                                         :credit-application/created-at]
                                       eid)]
-                        {:id              (:db/id m)
-                         :name            (:credit-application/name m)
-                         :email           (:credit-application/email m)
-                         :amount          (:credit-application/amount m)
-                         :yearlyIncome   (:credit-application/yearlyIncome m)
-                         :debt            (:credit-application/debt m)
-                         :dateOfBirth     (:credit-application/date-of-birth m)
-                         :married         (:credit-application/married m)
-                         :yearsWorking    (:credit-application/years-working m)
-                         :yearsExperience (:credit-application/years-experience m)
-                         :industry        (:credit-application/industry m)
-                         :createdAt       (some-> (:credit-application/created-at m) (.getTime))}))
+                        (cond-> {:id            (:db/id m)
+                                 :name          (:credit-application/name m)
+                                 :email         (:credit-application/email m)
+                                 :amount        (:credit-application/amount m)
+                                 :yearlyIncome  (:credit-application/yearlyIncome m)
+                                 :debt          (:credit-application/debt m)
+                                 :dateOfBirth   (:credit-application/date-of-birth m)
+                                 :married       (:credit-application/married m)
+                                 :yearsWorking  (:credit-application/years-working m)
+                                 :industry      (:credit-application/industry m)
+                                 :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
+                                (some? (:credit-application/years-experience m))
+                                (assoc :yearsExperience (:credit-application/years-experience m)))))
                     page-eids)]
     {:items items
      :page p
@@ -151,18 +159,19 @@
                                         :credit-application/industry
                                         :credit-application/created-at]
                                       eid)]
-                        {:id              (:db/id m)
-                         :name            (:credit-application/name m)
-                         :email           (:credit-application/email m)
-                         :amount          (:credit-application/amount m)
-                         :yearlyIncome   (:credit-application/yearlyIncome m)
-                         :debt            (:credit-application/debt m)
-                         :dateOfBirth     (:credit-application/date-of-birth m)
-                         :married         (:credit-application/married m)
-                         :yearsWorking    (:credit-application/years-working m)
-                         :yearsExperience (:credit-application/years-experience m)
-                         :industry        (:credit-application/industry m)
-                         :createdAt       (some-> (:credit-application/created-at m) (.getTime))}))
+                        (cond-> {:id            (:db/id m)
+                                 :name          (:credit-application/name m)
+                                 :email         (:credit-application/email m)
+                                 :amount        (:credit-application/amount m)
+                                 :yearlyIncome  (:credit-application/yearlyIncome m)
+                                 :debt          (:credit-application/debt m)
+                                 :dateOfBirth   (:credit-application/date-of-birth m)
+                                 :married       (:credit-application/married m)
+                                 :yearsWorking  (:credit-application/years-working m)
+                                 :industry      (:credit-application/industry m)
+                                 :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
+                                (some? (:credit-application/years-experience m))
+                                (assoc :yearsExperience (:credit-application/years-experience m)))))
                     page-eids)]
     {:items items
      :page p

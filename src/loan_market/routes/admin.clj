@@ -38,13 +38,15 @@
          (let [body     (:body req)
                username (or (body-val body :username) (body-val body "username"))
                password (or (body-val body :password) (body-val body "password"))
-               role     (or (body-val body :role) (body-val body "role"))]
+               role     (or (body-val body :role) (body-val body "role"))
+               name     (or (body-val body :name) (body-val body "name"))
+               email    (or (body-val body :email) (body-val body "email"))]
            (when (or (or (nil? username) (str/blank? (str username)))
                      (nil? password)
                      (nil? role))
              (throw (ex-info "username, password, role are required"
                              {:field "username/password/role"})))
-           (user/create! conn username password role)
+           (user/create! conn username password role {:name name :email email})
            (-> (response/response {:username username :role (str role)})
                (response/status 201)
                (response/content-type "application/json")))
@@ -63,10 +65,13 @@
        (try
          (let [body    (:body req)
                password (body-val body :password)
-               role     (body-val body :role)]
-           (when (and (nil? password) (nil? role))
-             (throw (ex-info "password or role is required" {:username username})))
-           (user/update! conn username {:password password :role role})
+               role     (body-val body :role)
+               name     (body-val body :name)
+               email    (body-val body :email)]
+           (when (and (nil? password) (nil? role) (nil? name) (nil? email))
+             (throw (ex-info "At least one of password, role, name, email is required"
+                             {:username username})))
+           (user/update! conn username {:password password :role role :name name :email email})
            (-> (response/response {:username username :updated true})
                (response/status 200)
                (response/content-type "application/json")))

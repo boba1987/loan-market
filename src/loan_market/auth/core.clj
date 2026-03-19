@@ -24,7 +24,7 @@
     (catch Exception _ nil)))
 
 (defn login-handler
-  "Ring handler: POST body {:username \"\" :password \"\"}. Returns 200 {:token \"\" :role \"\"} or 401."
+  "Ring handler: POST body {:username \"\" :password \"\"}. Returns 200 {:token \"\" :role \"\" :name \"\" :email \"\"} or 401."
   [conn]
   (fn [request]
     (let [body    (get request :body)
@@ -37,7 +37,9 @@
         (if-let [u (user/find-by-username conn username)]
           (if (user/check-password password (:user/password-hash u))
             (-> (response/response {:token (sign-token username (:user/role u))
-                                   :role  (:user/role u)})
+                                   :role  (:user/role u)
+                                   :name  (:user/name u)
+                                   :email (:user/email u)})
                 (response/status 200)
                 (response/content-type "application/json"))
             (-> (response/response {:error "Invalid credentials"})
