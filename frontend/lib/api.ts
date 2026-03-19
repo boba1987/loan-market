@@ -2,6 +2,15 @@
 
 import type { AuthState } from "@/lib/auth";
 
+function parseJsonSafe(text: string): unknown | null {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
@@ -22,13 +31,24 @@ export async function apiFetch<T>(
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  const data = parseJsonSafe(text);
 
   if (!response.ok) {
+    const maybeError =
+      data && typeof data === "object" && "error" in data
+        ? String((data as { error?: unknown }).error ?? "")
+        : "";
+    const plainText = text.trim();
     const message =
-      data?.error ?? `${response.status} ${response.statusText || "Request failed"}`;
+      maybeError ||
+      (plainText && plainText.length < 300 ? plainText : "") ||
+      (response.status >= 500
+        ? "Server error. Please try again in a moment."
+        : `${response.status} ${response.statusText || "Request failed"}`);
     throw new Error(message);
   }
 
-  return data as T;
+  if (!text) return null as T;
+  if (data !== null) return data as T;
+  throw new Error("Received an unexpected response format from server.");
 }
