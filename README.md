@@ -83,9 +83,9 @@ make clean
 
 ## Default Seed Users
 
-- `admin@admin.com` / `adminPass`
-- `jane@user.com` / `userPass`
-- `otp@bank.com` / `bankPass`
+- Admin - email: `admin@admin.com` / password: `adminPass`
+- User - email: `jane@user.com` / password: `userPass`
+- Bank - email: `otp@bank.com` / password: `bankPass`
 
 
 ## Roles
