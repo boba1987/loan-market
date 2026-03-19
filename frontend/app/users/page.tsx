@@ -321,20 +321,11 @@ export default function UsersPage() {
                 {editErrors[u.id]?.name ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.name}</p> : null}
                 <label className="text-xs font-medium">
                   Role
-                  <select
-                    className="mt-1 w-full rounded border px-2 py-1"
+                  <input
+                    className="mt-1 w-full rounded border bg-zinc-100 px-2 py-1"
                     value={editForms[u.id]?.role ?? "user"}
-                    onChange={(e) =>
-                      setEditForms((prev) => ({
-                        ...prev,
-                        [u.id]: { ...prev[u.id], role: e.target.value as UserRecord["role"] },
-                      }))
-                    }
-                  >
-                    <option value="user">User</option>
-                    <option value="bank">Bank</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                    disabled
+                  />
                 </label>
                 <label className="text-xs font-medium">
                   Date of birth
