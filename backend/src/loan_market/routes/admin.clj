@@ -14,28 +14,36 @@
   (routes
    ;; Users
    (GET "/users" []
-     (fn [_req]
-       (-> (response/response {:users (user/list-users conn)})
-           (response/content-type "application/json"))))
+     (fn [req]
+       (let [role  (some-> (get-in req [:params "role"]) str/trim)
+             users (if (or (nil? role) (str/blank? role))
+                     (user/list-users conn)
+                     (user/list-users conn {:role role}))]
+         (-> (response/response {:users users})
+             (response/content-type "application/json")))))
 
    (POST "/users" []
      (fn [req]
        (try
          (let [body     (:body req)
-               username (or (body-val body :username) (body-val body "username"))
                password (or (body-val body :password) (body-val body "password"))
                role     (or (body-val body :role) (body-val body "role"))
                name     (or (body-val body :name) (body-val body "name"))
                email    (or (body-val body :email) (body-val body "email"))]
-           (when (or (or (nil? username) (str/blank? (str username)))
+           (when (or (or (nil? email) (str/blank? (str email)))
                      (nil? password)
                      (nil? role))
-             (throw (ex-info "username, password, role are required"
-                             {:field "username/password/role"})))
-           (user/create! conn username password role {:name name :email email})
-           (-> (response/response {:username username :role (str role)})
-               (response/status 201)
-               (response/content-type "application/json")))
+             (throw (ex-info "email, password, role are required"
+                             {:field "email/password/role"})))
+           (user/create! conn email password role {:name name})
+           (let [eid (user/eid-by-email conn email)
+                 u   (user/find-by-eid conn eid)]
+             (-> (response/response {:id (:db/id u)
+                                       :email (:user/email u)
+                                       :name (:user/name u)
+                                       :role (:user/role u)})
+                 (response/status 201)
+                 (response/content-type "application/json"))))
          (catch clojure.lang.ExceptionInfo e
            (let [m (.getMessage e)]
              (-> (response/response {:error m})
@@ -46,21 +54,27 @@
                (response/status 500)
                (response/content-type "application/json"))))))
 
-   (PUT "/users/:username" [username]
+   (PUT "/users/:id" [id]
      (fn [req]
        (try
          (let [body    (:body req)
                password (body-val body :password)
                role     (body-val body :role)
                name     (body-val body :name)
-               email    (body-val body :email)]
+               email    (body-val body :email)
+               eid      (Long/parseLong (str id))]
            (when (and (nil? password) (nil? role) (nil? name) (nil? email))
              (throw (ex-info "At least one of password, role, name, email is required"
-                             {:username username})))
-           (user/update! conn username {:password password :role role :name name :email email})
-           (-> (response/response {:username username :updated true})
+                             {:id id})))
+           (user/update-by-eid! conn eid {:password password :role role :name name :email email})
+           (let [u (user/find-by-eid conn eid)]
+             (-> (response/response {:id (:db/id u)
+                                       :email (:user/email u)
+                                       :name (:user/name u)
+                                       :role (:user/role u)
+                                       :updated true})
                (response/status 200)
-               (response/content-type "application/json")))
+               (response/content-type "application/json"))))
          (catch clojure.lang.ExceptionInfo e
            (-> (response/response {:error (.getMessage e)})
                (response/status 400)
@@ -70,12 +84,18 @@
                (response/status 500)
                (response/content-type "application/json"))))))
 
-   (DELETE "/users/:username" [username]
+   (DELETE "/users/:id" [id]
      (fn [_req]
        (try
-         (user/delete! conn username)
-         (-> (response/response {:username username :deleted true})
-             (response/content-type "application/json"))
+        (let [eid      (Long/parseLong (str id))
+              existing (user/find-by-eid conn eid)]
+          (user/delete-by-eid! conn eid)
+          (-> (response/response {:id (:db/id existing)
+                                    :email (:user/email existing)
+                                    :name (:user/name existing)
+                                    :role (:user/role existing)
+                                    :deleted true})
+              (response/content-type "application/json")))
          (catch clojure.lang.ExceptionInfo e
            (-> (response/response {:error (.getMessage e)})
                (response/status 404)

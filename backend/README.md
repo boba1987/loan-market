@@ -56,23 +56,23 @@ The app and the REPL are separate processes. To query the **same** database the 
    (require '[datomic.client.api :as d] '[loan-market.db.core :as db])
    (def conn (db/connect))
    (def db-value (d/db conn))
-   (d/q '[:find ?username ?role :where [?e :user/username ?username] [?e :user/role ?role]] db-value)
+   (d/q '[:find ?email ?role :where [?e :user/email ?email] [?e :user/role ?role]] db-value)
    ```
-   You should see `#{["bank" "bank"] ["user" "user"]}`. If you still see `[]`, ensure `DATOMIC_STORAGE_DIR` is in `.env`, restart the app, hit it once, then start a **new** REPL.
+   You should see `#{["otp@bank.com" "bank"] ["jane@user.com" "user"] ["admin@admin.com" "admin"]}`. If you still see `[]`, ensure `DATOMIC_STORAGE_DIR` is in `.env`, restart the app, hit it once, then start a **new** REPL.
 
    **Note:** Datomic Local allows only one process to connect to the same storage at a time. If the app is running, the REPL will get "File .../.lock is in use". Either **stop the app** and then use the REPL, or use the admin endpoint below while the app is running.
 
-6. **While the app is running:** `GET /api/admin/users` returns the users in the app's DB as JSON (send an admin JWT; no second connection needed).
+6. **While the app is running:** `GET /api/admin/users` returns the users in the app's DB as JSON (send an admin JWT; no second connection needed). You can optionally filter by role using `GET /api/admin/users?role=admin`.
 
-## Default seed users
+## Default Seed Users
 
 On startup, the app seeds any missing default users (bank, user, admin):
 
-| Role | Username | Password  |
-|------|----------|-----------|
-| Bank | `bank`   | `bankPass` |
-| User | `user`   | `userPass` |
-| Admin | `admin` | `adminPass` |
+| Role | Email | Password |
+|------|-------|----------|
+| Bank | `otp@bank.com` | `bankPass` |
+| User | `jane@user.com` | `userPass` |
+| Admin | `admin@admin.com` | `adminPass` |
 
 These are for local development only. Change or disable them in production.
 
@@ -80,18 +80,18 @@ These are for local development only. Change or disable them in production.
 
 - **Public**
   - `GET /` – Hello world.
-  - `POST /api/login` – Body `{"username":"...","password":"..."}`. Returns `{"token":"...","role":"user"|"bank"|"admin"}`.
+  - `POST /api/login` – Body `{"email":"...","password":"..."}`. Returns `{"token":"...","role":"user"|"bank"|"admin","name":"...","email":"..."}`.
 - **Authenticated (User)** – Send `Authorization: Bearer <token>`.
   - `GET /api/user/me` – Current user info.
   - `POST /api/user/credit-applications` – Submit a credit application (authenticated). `dateOfBirth` must be `YYYY-MM-DD`.
   - `GET /api/user/credit-applications?page=1&pageSize=20` – List your credit applications with offset pagination.
 - **Authenticated (Admin)** – Same header, role must be `admin`.
-  - `GET /api/admin/users` – Returns `{"users":[{"username":"...","role":"..."}]}`.
-  - `POST /api/admin/users` – Body `{"username":"...","password":"...","role":"user"|"bank"|"admin"}`. Creates a new user.
-  - `PUT /api/admin/users/:username` – Body `{"password":"...","role":"..."}` (either can be included). Updates the user.
-  - `DELETE /api/admin/users/:username` – Deletes the user.
+  - `GET /api/admin/users` – Returns `{"users":[{"id":123,"email":"...","name":"...","role":"..."}]}`. Optional query param: `?role=admin` (or `bank` / `user`).
+  - `POST /api/admin/users` – Body `{"email":"...","password":"...","role":"user"|"bank"|"admin","name":"..."}`. Creates a new user.
+  - `PUT /api/admin/users/:id` – Body may include `{"email":"...","password":"...","role":"...","name":"..."}`. Updates the user.
+  - `DELETE /api/admin/users/:id` – Deletes the user by Datomic user id (`:id`).
   - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination. Each item includes:
-    - `offers`: an array of offers across all banks, e.g. `{"bank":"bank","interestRate":4.25,"repaymentPeriod":60}` (empty if no offers yet).
+    - `offers`: an array of offers across all banks, e.g. `{"bankName":"OTP Bank","bankEmail":"otp@bank.com","interestRate":4.25,"repaymentPeriod":60}` (empty if no offers yet).
   - `DELETE /api/admin/credit-applications/:id` – Deletes a credit application.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
   - `GET /api/bank/me` – Current bank user info.

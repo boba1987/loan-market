@@ -3,45 +3,45 @@
             [loan-market.domain.user :as user]))
 
 (def seed-users
-  [{:username "bank" :password "bankPass" :role "bank"
-    :name "OTP Bank" :email "user@otp.com"}
-   {:username "user" :password "userPass" :role "user"
-    :name "Jane Doe" :email "jane@example.com"}
-   {:username "admin" :password "adminPass" :role "admin"
-    :name "Admin" :email "admin@example.com"}])
+  [{:email "otp@bank.com" :password "bankPass" :role "bank"
+    :name "OTP Bank"}
+   {:email "jane@user.com" :password "userPass" :role "user"
+    :name "Jane Doe"}
+   {:email "admin@admin.com" :password "adminPass" :role "admin"
+    :name "Admin"}])
 
 (defn seed-if-empty!
-  "Seed default users (bank/bankPass, user/userPass, admin/adminPass) if they are missing.
+  "Seed default users (otp@bank.com, jane@user.com, admin@admin.com) if they are missing.
    Idempotent."
   [conn]
   (let [existing-count (user/count-users conn)
         missing-any?
         (or (zero? existing-count)
-            (some (fn [{:keys [username]}]
-                    (nil? (user/find-by-username conn username)))
+            (some (fn [{:keys [email]}]
+                    (nil? (user/find-by-email conn email)))
                   seed-users))]
     (when missing-any?
       (println "[seed] Seeding missing users (bank, user, admin).")
       (doseq [s seed-users]
-        (when-not (user/find-by-username conn (:username s))
-          (user/create! conn (:username s) (:password s) (:role s)
-                         {:name (:name s) :email (:email s)}))))
+        (when-not (user/find-by-email conn (:email s))
+          (user/create! conn (:email s) (:password s) (:role s)
+                         {:name (:name s)}))))
 
     ;; Ensure seeded profile fields exist even for users created in older DB versions.
     (doseq [s seed-users]
-      (let [u (user/find-by-username conn (:username s))]
+      (let [u (user/find-by-email conn (:email s))]
         (when (or (nil? (:user/name u)) (nil? (:user/email u)))
-          (user/update! conn (:username s)
+          (user/update! conn (:email s)
                          {:name (:name s) :email (:email s)}))))
 
     ;; Seed a sample credit application for the default `user` if none exists yet.
-    (let [r (credit-application/list-by-user conn "user" {:page 1 :pageSize 1})]
+    (let [r (credit-application/list-by-user conn "jane@user.com" {:page 1 :pageSize 1})]
       (when (zero? (:total r))
         (credit-application/create!
           conn
-          "user"
+          "jane@user.com"
           {:name "Jane Doe"
-           :email "jane@example.com"
+           :email "jane@user.com"
            :income 50000
            :debt 2000
            :dateOfBirth "1990-01-30"

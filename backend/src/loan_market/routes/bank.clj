@@ -12,11 +12,10 @@
   (routes
    (GET "/me" []
      (fn [req]
-       (let [u (user/find-by-username conn (:auth/username req))]
-         (-> (response/response {:username (:auth/username req)
-                                   :role     (:auth/role req)
-                                   :name     (:user/name u)
-                                   :email    (:user/email u)})
+       (let [u (user/find-by-email conn (:auth/email req))]
+         (-> (response/response {:role  (:auth/role req)
+                                   :name  (:user/name u)
+                                   :email (:user/email u)})
              (response/content-type "application/json")))))
 
    (GET "/credit-applications" []
@@ -25,19 +24,19 @@
              pageSize (some-> (get-in req [:params "pageSize"]) Long/parseLong)]
          (-> (response/response (credit-application/list-by-bank
                                    conn
-                                   (:auth/username req)
+                                   (:auth/email req)
                                    {:page page :pageSize pageSize}))
              (response/content-type "application/json")))))
 
    (POST "/credit-applications/:id/offer" [id]
      (fn [req]
        (let [body          (:body req)
-             bank-username (:auth/username req)
+             bank-email    (:auth/email req)
              ir            (body-val body :interestRate)
              rp            (body-val body :repaymentPeriod)]
          (try
-           (credit-application/offer! conn bank-username id {:interestRate ir
-                                                                 :repaymentPeriod rp})
+           (credit-application/offer! conn bank-email id {:interestRate ir
+                                                            :repaymentPeriod rp})
            (-> (response/response {:id id :offered true})
                (response/content-type "application/json"))
            (catch clojure.lang.ExceptionInfo e

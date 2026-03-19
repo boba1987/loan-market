@@ -31,9 +31,9 @@
     :else (throw (ex-info "Invalid numeric field" {:value x}))))
 
 (defn create!
-  "Create a credit application for username. Payload keys can be keywords or strings.
+  "Create a credit application for a user email. Payload keys can be keywords or strings.
    Expects dateOfBirth as ISO YYYY-MM-DD string."
-  [conn username payload]
+  [conn email payload]
   (let [payload (cond-> payload
                    ;; Accept `income` as alias for `yearlyIncome`
                    (and (nil? (body-val payload :yearlyIncome))
@@ -48,8 +48,8 @@
                               :married
                               :yearsWorking
                               :industry])
-  (let [user-eid (or (user/eid-by-username conn username)
-                     (throw (ex-info "User not found" {:username (str username)})))
+  (let [user-eid (or (user/eid-by-email conn email)
+                     (throw (ex-info "User not found" {:email (str email)})))
         dob (str (body-val payload :dateOfBirth))]
     (when-not (re-matches dob-re dob)
       (throw (ex-info "dateOfBirth must be YYYY-MM-DD" {:dateOfBirth dob})))
@@ -74,14 +74,14 @@
       {:id eid}))))
 
 (defn list-by-user
-  "List applications for username with offset pagination.
+  "List applications for a user email with offset pagination.
    opts: {:page 1-based int, :pageSize int}. Returns {:items [] :page :pageSize :total}."
-  [conn username {:keys [page pageSize]}]
+  [conn email {:keys [page pageSize]}]
   (let [p (max 1 (long (or page 1)))
         s (max 1 (min 100 (long (or pageSize 20))))
         offset (* (dec p) s)
-        user-eid (or (user/eid-by-username conn username)
-                     (throw (ex-info "User not found" {:username (str username)})))
+        user-eid (or (user/eid-by-email conn email)
+                     (throw (ex-info "User not found" {:email (str email)})))
         db (d/db conn)
         rows (d/q '[:find ?e ?createdAt
                     :in $ ?u
@@ -146,18 +146,20 @@
         sorted (->> rows (sort-by second #(compare %2 %1)))
         total (count sorted)
         page-eids (->> sorted (drop offset) (take s) (map first))
-        offer-rows (d/q '[:find ?appEid ?bankUsername ?interest ?period
+        offer-rows (d/q '[:find ?appEid ?bankName ?bankEmail ?interest ?period
                           :in $ ?appEids
                           :where
                           [?offer :offer/credit-application ?appEid]
                           [?offer :offer/bank ?bankEid]
-                          [?bankEid :user/username ?bankUsername]
+                          [?bankEid :user/name ?bankName]
+                          [?bankEid :user/email ?bankEmail]
                           [?offer :offer/interest-rate ?interest]
                           [?offer :offer/repayment-period ?period]
                           [(contains? ?appEids ?appEid)]]
                         db (set page-eids))
-        offers-by-app (reduce (fn [acc [appEid bankUsername interest period]]
-                                 (update acc appEid (fnil conj []) {:bank bankUsername
+        offers-by-app (reduce (fn [acc [appEid bankName bankEmail interest period]]
+                                 (update acc appEid (fnil conj []) {:bankName bankName
+                                                                      :bankEmail bankEmail
                                                                       :interestRate interest
                                                                       :repaymentPeriod period}))
                                {} offer-rows)
@@ -200,13 +202,13 @@
 (defn list-by-bank
   "Bank listing: same app shape as admin listing, but includes only the calling bank's offer
    as `interestRate` and `repaymentPeriod` (and omits the `offers` array)."
-  [conn bank-username {:keys [page pageSize]}]
+  [conn bank-email {:keys [page pageSize]}]
   (let [p (max 1 (long (or page 1)))
         s (max 1 (min 100 (long (or pageSize 20))))
         offset (* (dec p) s)
         db (d/db conn)
-        bank-eid (or (user/eid-by-username conn bank-username)
-                      (throw (ex-info "Bank user not found" {:username (str bank-username)})))
+        bank-eid (or (user/eid-by-email conn bank-email)
+                      (throw (ex-info "Bank user not found" {:email (str bank-email)})))
         rows (d/q '[:find ?e ?createdAt
                     :where [?e :credit-application/created-at ?createdAt]]
                   db)
@@ -269,13 +271,13 @@
    Payload expects:
    - interestRate (double)
    - repaymentPeriod (long)"
-  [conn bank-username application-id {:keys [interestRate repaymentPeriod] :as payload}]
+  [conn bank-email application-id {:keys [interestRate repaymentPeriod] :as payload}]
   (let [app-eid (Long/parseLong (str application-id))
         db      (d/db conn)
         _       (when-not (d/pull db '[:db/id] app-eid)
                   (throw (ex-info "Credit application not found" {:id application-id})))
-        bank-eid (or (user/eid-by-username conn bank-username)
-                      (throw (ex-info "Bank user not found" {:username (str bank-username)})))
+        bank-eid (or (user/eid-by-email conn bank-email)
+                      (throw (ex-info "Bank user not found" {:email (str bank-email)})))
         ir      (or interestRate (:interestRate payload))
         rp      (or repaymentPeriod (:repaymentPeriod payload))]
     (when (or (nil? ir) (nil? rp))

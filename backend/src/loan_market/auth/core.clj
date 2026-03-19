@@ -9,10 +9,10 @@
 (def default-exp-secs (* 24 60 60)) ;; 24 hours
 
 (defn sign-token
-  [username role]
+  [email role]
   (let [now (quot (System/currentTimeMillis) 1000)
-        claims {:username username
-                :role     role
+        claims {:email email
+                :role  role
                 :exp      (+ now default-exp-secs)
                 :iat      now}]
     (jwt/sign claims (jwt-secret))))
@@ -24,19 +24,19 @@
     (catch Exception _ nil)))
 
 (defn login-handler
-  "Ring handler: POST body {:username \"\" :password \"\"}. Returns 200 {:token \"\" :role \"\" :name \"\" :email \"\"} or 401."
+  "Ring handler: POST body {:email \"\" :password \"\"}. Returns 200 {:token \"\" :role \"\" :name \"\" :email \"\"} or 401."
   [conn]
   (fn [request]
     (let [body    (get request :body)
-          username (or (get body :username) (get body "username"))
+          email    (or (get body :email) (get body "email"))
           password (or (get body :password) (get body "password"))]
-      (if (or (str/blank? (str username)) (str/blank? (str password)))
-        (-> (response/response {:error "username and password required"})
+      (if (or (str/blank? (str email)) (str/blank? (str password)))
+        (-> (response/response {:error "email and password required"})
             (response/status 400)
             (response/content-type "application/json"))
-        (if-let [u (user/find-by-username conn username)]
+        (if-let [u (user/find-by-email conn email)]
           (if (user/check-password password (:user/password-hash u))
-            (-> (response/response {:token (sign-token username (:user/role u))
+            (-> (response/response {:token (sign-token email (:user/role u))
                                    :role  (:user/role u)
                                    :name  (:user/name u)
                                    :email (:user/email u)})
@@ -50,7 +50,7 @@
               (response/content-type "application/json")))))))
 
 (defn wrap-jwt
-  "Middleware: extract Authorization Bearer token, unsign, assoc :auth/username and :auth/role to request. 401 if missing/invalid."
+  "Middleware: extract Authorization Bearer token, unsign, assoc :auth/email and :auth/role to request. 401 if missing/invalid."
   [handler]
   (fn [request]
     (let [auth-header (get-in request [:headers "authorization"])
@@ -58,8 +58,8 @@
                                  (str/starts-with? (str/lower-case auth-header) "bearer "))
                         (str/trim (subs auth-header 7)))
           claims      (when token (unsign-token token))]
-      (if (and claims (:username claims) (:role claims))
-        (handler (assoc request :auth/username (:username claims) :auth/role (:role claims)))
+      (if (and claims (:email claims) (:role claims))
+        (handler (assoc request :auth/email (:email claims) :auth/role (:role claims)))
         (-> (response/response {:error "Missing or invalid authorization"})
             (response/status 401)
             (response/content-type "application/json"))))))
