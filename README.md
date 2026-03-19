@@ -90,8 +90,11 @@ These are for local development only. Change or disable them in production.
   - `POST /api/admin/users` – Body `{"username":"...","password":"...","role":"user"|"bank"|"admin"}`. Creates a new user.
   - `PUT /api/admin/users/:username` – Body `{"password":"...","role":"..."}` (either can be included). Updates the user.
   - `DELETE /api/admin/users/:username` – Deletes the user.
-  - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.
+  - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination. Each item includes:
+    - `offers`: an array of offers across all banks, e.g. `{"bank":"bank","interestRate":4.25,"repaymentPeriod":60}` (empty if no offers yet).
   - `DELETE /api/admin/credit-applications/:id` – Deletes a credit application.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
   - `GET /api/bank/me` – Current bank user info.
-  - `GET /api/bank/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.
+  - `GET /api/bank/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination. Each item includes:
+    - `interestRate` and `repaymentPeriod` only for offers submitted by the calling bank (omitted if the bank hasn't offered yet).
+  - `POST /api/bank/credit-applications/:id/offer` – Body `{"interestRate":4.25,"repaymentPeriod":60}`. Submits/overwrites the calling bank's offer for the given credit application. Response: `{"id": <id>, "offered": true}`.
