@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
+import { emailError, formatIsoDateInput, isoDateError, numberError, required } from "@/lib/validation";
 
 type UserRecord = {
   id: number;
@@ -27,7 +28,7 @@ export default function UsersPage() {
         name: string;
         role: "user" | "bank" | "admin";
         dateOfBirth: string;
-        married: "true" | "false";
+        married: "" | "true" | "false";
         yearsWorking: string;
         industry: string;
       }
@@ -35,15 +36,18 @@ export default function UsersPage() {
   >({});
   const [roleFilter, setRoleFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [createErrors, setCreateErrors] = useState<Record<string, string | undefined>>({});
+  const [editErrors, setEditErrors] = useState<Record<number, Record<string, string | undefined>>>({});
   const [pendingDeleteUserId, setPendingDeleteUserId] = useState<number | null>(null);
 
   const [createForm, setCreateForm] = useState({
     email: "",
     password: "",
+    confirmPassword: "",
     role: "user",
     name: "",
     dateOfBirth: "",
-    married: "true",
+    married: "",
     yearsWorking: "",
     industry: "",
   });
@@ -65,7 +69,7 @@ export default function UsersPage() {
               name: u.name ?? "",
               role: u.role,
               dateOfBirth: u.dateOfBirth ?? "",
-              married: String(Boolean(u.married)) as "true" | "false",
+              married: (u.married == null ? "" : String(Boolean(u.married))) as "" | "true" | "false",
               yearsWorking: u.yearsWorking != null ? String(u.yearsWorking) : "",
               industry: u.industry ?? "",
             },
@@ -96,6 +100,20 @@ export default function UsersPage() {
   const submitCreate = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    const nextErrors = {
+      email: emailError(createForm.email) ?? undefined,
+      password: required(createForm.password, "Password") ?? undefined,
+      confirmPassword:
+        required(createForm.confirmPassword, "Confirm password") ??
+        (createForm.password !== createForm.confirmPassword ? "Passwords do not match" : undefined),
+      name: required(createForm.name, "Name") ?? undefined,
+      dateOfBirth: createForm.dateOfBirth ? isoDateError(createForm.dateOfBirth, "Date of birth") ?? undefined : undefined,
+      married: required(createForm.married, "Married") ?? undefined,
+      yearsWorking: createForm.yearsWorking ? numberError(createForm.yearsWorking, "Years working", { min: 0 }) ?? undefined : undefined,
+      industry: createForm.industry ? undefined : undefined,
+    };
+    setCreateErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
     try {
       await apiFetch("/api/admin/users", {
         method: "POST",
@@ -113,10 +131,11 @@ export default function UsersPage() {
       setCreateForm({
         email: "",
         password: "",
+        confirmPassword: "",
         role: "user",
         name: "",
         dateOfBirth: "",
-        married: "true",
+        married: "",
         yearsWorking: "",
         industry: "",
       });
@@ -140,6 +159,14 @@ export default function UsersPage() {
     if (!auth) return;
     const form = editForms[id];
     if (!form) return;
+    const rowErrors = {
+      email: emailError(form.email) ?? undefined,
+      name: required(form.name, "Name") ?? undefined,
+      dateOfBirth: form.dateOfBirth ? isoDateError(form.dateOfBirth, "Date of birth") ?? undefined : undefined,
+      yearsWorking: form.yearsWorking ? numberError(form.yearsWorking, "Years working", { min: 0 }) ?? undefined : undefined,
+    };
+    setEditErrors((prev) => ({ ...prev, [id]: rowErrors }));
+    if (Object.values(rowErrors).some(Boolean)) return;
     setError(null);
     try {
       await apiFetch(
@@ -171,23 +198,81 @@ export default function UsersPage() {
 
       <section className="mb-6 rounded border bg-white p-4">
         <h2 className="mb-3 text-lg font-medium">Create User</h2>
-        <form onSubmit={submitCreate} className="grid grid-cols-1 gap-2 md:grid-cols-3">
-          <input className="rounded border px-2 py-2" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
-          <input className="rounded border px-2 py-2" placeholder="Password" type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
-          <select className="rounded border px-2 py-2" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}>
-            <option value="user">user</option>
-            <option value="bank">bank</option>
-            <option value="admin">admin</option>
-          </select>
-          <input className="rounded border px-2 py-2" placeholder="Name" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
-          <input className="rounded border px-2 py-2" placeholder="Date of birth YYYY-MM-DD" value={createForm.dateOfBirth} onChange={(e) => setCreateForm((p) => ({ ...p, dateOfBirth: e.target.value }))} />
-          <select className="rounded border px-2 py-2" value={createForm.married} onChange={(e) => setCreateForm((p) => ({ ...p, married: e.target.value }))}>
-            <option value="true">Married true</option>
-            <option value="false">Married false</option>
-          </select>
-          <input className="rounded border px-2 py-2" placeholder="Years working" value={createForm.yearsWorking} onChange={(e) => setCreateForm((p) => ({ ...p, yearsWorking: e.target.value }))} />
-          <input className="rounded border px-2 py-2 md:col-span-2" placeholder="Industry" value={createForm.industry} onChange={(e) => setCreateForm((p) => ({ ...p, industry: e.target.value }))} />
-          <button type="submit" className="rounded bg-blue-600 px-3 py-2 text-white">Create</button>
+        <form onSubmit={submitCreate} className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className="text-xs font-medium">
+              Email
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Email" value={createForm.email} onChange={(e) => setCreateForm((p) => ({ ...p, email: e.target.value }))} />
+            </label>
+            {createErrors.email ? <p className="mt-1 text-xs text-red-600">{createErrors.email}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Password
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Password" type="password" value={createForm.password} onChange={(e) => setCreateForm((p) => ({ ...p, password: e.target.value }))} />
+            </label>
+            {createErrors.password ? <p className="mt-1 text-xs text-red-600">{createErrors.password}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Confirm password
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Confirm password" type="password" value={createForm.confirmPassword} onChange={(e) => setCreateForm((p) => ({ ...p, confirmPassword: e.target.value }))} />
+            </label>
+            {createErrors.confirmPassword ? <p className="mt-1 text-xs text-red-600">{createErrors.confirmPassword}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Role
+              <select className="mt-1 w-full rounded border px-2 py-2" value={createForm.role} onChange={(e) => setCreateForm((p) => ({ ...p, role: e.target.value }))}>
+                <option value="user">user</option>
+                <option value="bank">bank</option>
+                <option value="admin">admin</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Name
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Name" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} />
+            </label>
+            {createErrors.name ? <p className="mt-1 text-xs text-red-600">{createErrors.name}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Date of birth
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Date of birth YYYY-MM-DD" value={createForm.dateOfBirth} onChange={(e) => setCreateForm((p) => ({ ...p, dateOfBirth: formatIsoDateInput(e.target.value) }))} />
+            </label>
+            {createErrors.dateOfBirth ? <p className="mt-1 text-xs text-red-600">{createErrors.dateOfBirth}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Married
+              <select className="mt-1 w-full rounded border px-2 py-2" value={createForm.married} onChange={(e) => setCreateForm((p) => ({ ...p, married: e.target.value }))}>
+                <option value="" disabled>
+                  Select...
+                </option>
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+            {createErrors.married ? <p className="mt-1 text-xs text-red-600">{createErrors.married}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Years working
+              <input type="number" min={0} className="mt-1 w-full rounded border px-2 py-2" placeholder="Years working" value={createForm.yearsWorking} onChange={(e) => setCreateForm((p) => ({ ...p, yearsWorking: e.target.value }))} />
+            </label>
+            {createErrors.yearsWorking ? <p className="mt-1 text-xs text-red-600">{createErrors.yearsWorking}</p> : null}
+          </div>
+          <div>
+            <label className="text-xs font-medium">
+              Industry
+              <input className="mt-1 w-full rounded border px-2 py-2" placeholder="Industry" value={createForm.industry} onChange={(e) => setCreateForm((p) => ({ ...p, industry: e.target.value }))} />
+            </label>
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <button type="submit" className="rounded bg-blue-600 px-3 py-2 text-white">Create</button>
+          </div>
         </form>
       </section>
 
@@ -206,86 +291,114 @@ export default function UsersPage() {
             <div key={u.id} className="rounded border p-3 text-sm">
               <p className="mb-2"><strong>ID:</strong> {u.id}</p>
               <div className="mb-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-                <input
-                  className="rounded border px-2 py-1"
-                  value={editForms[u.id]?.email ?? ""}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], email: e.target.value },
-                    }))
-                  }
-                />
-                <input
-                  className="rounded border px-2 py-1"
-                  value={editForms[u.id]?.name ?? ""}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], name: e.target.value },
-                    }))
-                  }
-                />
-                <select
-                  className="rounded border px-2 py-1"
-                  value={editForms[u.id]?.role ?? "user"}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], role: e.target.value as UserRecord["role"] },
-                    }))
-                  }
-                >
-                  <option value="user">user</option>
-                  <option value="bank">bank</option>
-                  <option value="admin">admin</option>
-                </select>
-                <input
-                  className="rounded border px-2 py-1"
-                  placeholder="YYYY-MM-DD"
-                  value={editForms[u.id]?.dateOfBirth ?? ""}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], dateOfBirth: e.target.value },
-                    }))
-                  }
-                />
-                <select
-                  className="rounded border px-2 py-1"
-                  value={editForms[u.id]?.married ?? "false"}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], married: e.target.value as "true" | "false" },
-                    }))
-                  }
-                >
-                  <option value="true">married true</option>
-                  <option value="false">married false</option>
-                </select>
-                <input
-                  className="rounded border px-2 py-1"
-                  placeholder="Years working"
-                  value={editForms[u.id]?.yearsWorking ?? ""}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], yearsWorking: e.target.value },
-                    }))
-                  }
-                />
-                <input
-                  className="rounded border px-2 py-1 md:col-span-2"
-                  placeholder="Industry"
-                  value={editForms[u.id]?.industry ?? ""}
-                  onChange={(e) =>
-                    setEditForms((prev) => ({
-                      ...prev,
-                      [u.id]: { ...prev[u.id], industry: e.target.value },
-                    }))
-                  }
-                />
+                <label className="text-xs font-medium">
+                  Email
+                  <input
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    value={editForms[u.id]?.email ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], email: e.target.value },
+                      }))
+                    }
+                  />
+                </label>
+                {editErrors[u.id]?.email ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.email}</p> : null}
+                <label className="text-xs font-medium">
+                  Name
+                  <input
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    value={editForms[u.id]?.name ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], name: e.target.value },
+                      }))
+                    }
+                  />
+                </label>
+                {editErrors[u.id]?.name ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.name}</p> : null}
+                <label className="text-xs font-medium">
+                  Role
+                  <select
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    value={editForms[u.id]?.role ?? "user"}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], role: e.target.value as UserRecord["role"] },
+                      }))
+                    }
+                  >
+                    <option value="user">user</option>
+                    <option value="bank">bank</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </label>
+                <label className="text-xs font-medium">
+                  Date of birth
+                  <input
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    placeholder="YYYY-MM-DD"
+                    value={editForms[u.id]?.dateOfBirth ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], dateOfBirth: formatIsoDateInput(e.target.value) },
+                      }))
+                    }
+                  />
+                </label>
+                {editErrors[u.id]?.dateOfBirth ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.dateOfBirth}</p> : null}
+                <label className="text-xs font-medium">
+                  Married
+                  <select
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    value={editForms[u.id]?.married ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], married: e.target.value as "" | "true" | "false" },
+                      }))
+                    }
+                  >
+                    <option value="">Select...</option>
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </label>
+                <label className="text-xs font-medium">
+                  Years working
+                  <input
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    type="number"
+                    min={0}
+                    placeholder="Years working"
+                    value={editForms[u.id]?.yearsWorking ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], yearsWorking: e.target.value },
+                      }))
+                    }
+                  />
+                </label>
+                {editErrors[u.id]?.yearsWorking ? <p className="text-xs text-red-600 md:col-span-2">{editErrors[u.id]?.yearsWorking}</p> : null}
+                <label className="text-xs font-medium">
+                  Industry
+                  <input
+                    className="mt-1 w-full rounded border px-2 py-1"
+                    placeholder="Industry"
+                    value={editForms[u.id]?.industry ?? ""}
+                    onChange={(e) =>
+                      setEditForms((prev) => ({
+                        ...prev,
+                        [u.id]: { ...prev[u.id], industry: e.target.value },
+                      }))
+                    }
+                  />
+                </label>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => void updateUser(u.id)} className="rounded bg-blue-600 px-3 py-1 text-white">

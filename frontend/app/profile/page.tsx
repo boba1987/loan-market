@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { apiFetch } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
+import { formatIsoDateInput, isoDateError, numberError, required } from "@/lib/validation";
 
 type UserProfile = {
   role: string;
@@ -26,6 +27,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string | undefined>>({});
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -77,6 +79,14 @@ export default function ProfilePage() {
     e.preventDefault();
     if (auth.role !== "user") return;
     setSaveError(null);
+    const nextErrors = {
+      name: required(form.name, "Name") ?? undefined,
+      dateOfBirth: isoDateError(form.dateOfBirth, "Date of birth") ?? undefined,
+      yearsWorking: numberError(form.yearsWorking, "Years working", { min: 0 }) ?? undefined,
+      industry: required(form.industry, "Industry") ?? undefined,
+    };
+    setFieldErrors(nextErrors);
+    if (Object.values(nextErrors).some(Boolean)) return;
     setSaving(true);
     try {
       const updated = await apiFetch<UserProfile>(
@@ -114,6 +124,7 @@ export default function ProfilePage() {
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             />
+            {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
@@ -125,8 +136,9 @@ export default function ProfilePage() {
               className="w-full rounded border px-3 py-2"
               placeholder="YYYY-MM-DD"
               value={form.dateOfBirth}
-              onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
+              onChange={(e) => setForm((p) => ({ ...p, dateOfBirth: formatIsoDateInput(e.target.value) }))}
             />
+            {fieldErrors.dateOfBirth ? <p className="mt-1 text-xs text-red-600">{fieldErrors.dateOfBirth}</p> : null}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Married</label>
@@ -142,10 +154,13 @@ export default function ProfilePage() {
           <div>
             <label className="mb-1 block text-sm font-medium">Years working</label>
             <input
+              type="number"
+              min={0}
               className="w-full rounded border px-3 py-2"
               value={form.yearsWorking}
               onChange={(e) => setForm((p) => ({ ...p, yearsWorking: e.target.value }))}
             />
+            {fieldErrors.yearsWorking ? <p className="mt-1 text-xs text-red-600">{fieldErrors.yearsWorking}</p> : null}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Industry</label>
@@ -154,6 +169,7 @@ export default function ProfilePage() {
               value={form.industry}
               onChange={(e) => setForm((p) => ({ ...p, industry: e.target.value }))}
             />
+            {fieldErrors.industry ? <p className="mt-1 text-xs text-red-600">{fieldErrors.industry}</p> : null}
           </div>
           {saveError ? <p className="text-sm text-red-600">{saveError}</p> : null}
           <button

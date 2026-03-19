@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/app-shell";
 import { useAuthState } from "@/lib/auth";
 import { apiFetch } from "@/lib/api";
+import { numberError } from "@/lib/validation";
 
 type Offer = {
   bankName?: string;
@@ -52,6 +53,7 @@ export default function LoanApplicationsPage() {
   const [submittingFor, setSubmittingFor] = useState<number | null>(null);
   const [pendingDeleteApplicationId, setPendingDeleteApplicationId] = useState<number | null>(null);
   const [offerForm, setOfferForm] = useState<Record<number, { interestRate: string; repaymentPeriod: string }>>({});
+  const [offerErrors, setOfferErrors] = useState<Record<number, { interestRate?: string; repaymentPeriod?: string }>>({});
 
   const endpoint = useMemo(() => {
     if (!auth) return null;
@@ -81,6 +83,12 @@ export default function LoanApplicationsPage() {
     if (!auth || auth.role !== "bank") return;
     const values = offerForm[applicationId];
     if (!values?.interestRate || !values?.repaymentPeriod) return;
+    const nextErrors = {
+      interestRate: numberError(values.interestRate, "Interest rate", { min: 0 }) ?? undefined,
+      repaymentPeriod: numberError(values.repaymentPeriod, "Repayment period", { min: 1 }) ?? undefined,
+    };
+    setOfferErrors((prev) => ({ ...prev, [applicationId]: nextErrors }));
+    if (nextErrors.interestRate || nextErrors.repaymentPeriod) return;
     setSubmittingFor(applicationId);
     setError(null);
     try {
@@ -164,6 +172,9 @@ export default function LoanApplicationsPage() {
                       }
                     />
                   </div>
+                  {offerErrors[app.id]?.interestRate ? (
+                    <p className="text-xs text-red-600">{offerErrors[app.id]?.interestRate}</p>
+                  ) : null}
                   <div>
                     <label className="mb-1 block text-xs">Repayment period (months)</label>
                     <input
@@ -178,6 +189,9 @@ export default function LoanApplicationsPage() {
                       }
                     />
                   </div>
+                  {offerErrors[app.id]?.repaymentPeriod ? (
+                    <p className="text-xs text-red-600">{offerErrors[app.id]?.repaymentPeriod}</p>
+                  ) : null}
                   <button
                     type="submit"
                     disabled={submittingFor === app.id}

@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { saveAuth, type AuthState } from "@/lib/auth";
+import { emailError, required } from "@/lib/validation";
 
 type LoginResponse = {
   token: string;
@@ -18,10 +19,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    const nextErrors = {
+      email: emailError(email) ?? undefined,
+      password: required(password, "Password") ?? undefined,
+    };
+    setFieldErrors(nextErrors);
+    if (nextErrors.email || nextErrors.password) return;
     setLoading(true);
     try {
       const result = await apiFetch<LoginResponse>("/api/login", {
@@ -58,6 +66,7 @@ export default function LoginPage() {
               className="w-full rounded border px-3 py-2"
               placeholder="example@email.com"
             />
+            {fieldErrors.email ? <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p> : null}
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Password</label>
@@ -68,6 +77,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded border px-3 py-2"
             />
+            {fieldErrors.password ? <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p> : null}
           </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <button
