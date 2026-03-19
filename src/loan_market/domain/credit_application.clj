@@ -120,7 +120,7 @@
                                  :dateOfBirth   (:credit-application/date-of-birth m)
                                  :married       (:credit-application/married m)
                                  :yearsWorking  (:credit-application/years-working m)
-                                 :industry      (:credit-application/industry m)
+                                  :industry      (:credit-application/industry m)
                                  :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
                                 (some? (:credit-application/years-experience m))
                                 (assoc :yearsExperience (:credit-application/years-experience m)))))
@@ -132,7 +132,9 @@
 
 (defn list-all
   "List all applications with offset pagination (bank use-case).
-   opts: {:page 1-based int, :pageSize int}. Returns {:items [] :page :pageSize :total}."
+   opts: {:page 1-based int, :pageSize int}. Returns {:items [] :page :pageSize :total}.
+
+   Admin listing: each item includes an `offers` array with offers from all banks."
   [conn {:keys [page pageSize]}]
   (let [p (max 1 (long (or page 1)))
         s (max 1 (min 100 (long (or pageSize 20))))
@@ -144,49 +146,174 @@
         sorted (->> rows (sort-by second #(compare %2 %1)))
         total (count sorted)
         page-eids (->> sorted (drop offset) (take s) (map first))
+        offer-rows (d/q '[:find ?appEid ?bankUsername ?interest ?period
+                          :in $ ?appEids
+                          :where
+                          [?offer :offer/credit-application ?appEid]
+                          [?offer :offer/bank ?bankEid]
+                          [?bankEid :user/username ?bankUsername]
+                          [?offer :offer/interest-rate ?interest]
+                          [?offer :offer/repayment-period ?period]
+                          [(contains? ?appEids ?appEid)]]
+                        db (set page-eids))
+        offers-by-app (reduce (fn [acc [appEid bankUsername interest period]]
+                                 (update acc appEid (fnil conj []) {:bank bankUsername
+                                                                      :interestRate interest
+                                                                      :repaymentPeriod period}))
+                               {} offer-rows)
         items (mapv (fn [eid]
-                      (let [m (d/pull db
-                                      '[:db/id
-                                        :credit-application/name
-                                        :credit-application/email
-                                        :credit-application/amount
-                                        :credit-application/yearlyIncome
-                                        :credit-application/debt
-                                        :credit-application/date-of-birth
-                                        :credit-application/married
-                                        :credit-application/years-working
-                                        :credit-application/years-experience
-                                        :credit-application/industry
-                                        :credit-application/created-at]
-                                      eid)]
-                        (cond-> {:id            (:db/id m)
-                                 :name          (:credit-application/name m)
-                                 :email         (:credit-application/email m)
-                                 :amount        (:credit-application/amount m)
-                                 :yearlyIncome  (:credit-application/yearlyIncome m)
-                                 :debt          (:credit-application/debt m)
-                                 :dateOfBirth   (:credit-application/date-of-birth m)
-                                 :married       (:credit-application/married m)
-                                 :yearsWorking  (:credit-application/years-working m)
-                                 :industry      (:credit-application/industry m)
-                                 :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
-                                (some? (:credit-application/years-experience m))
-                                (assoc :yearsExperience (:credit-application/years-experience m)))))
-                    page-eids)]
+                       (let [m (d/pull db
+                                       '[:db/id
+                                         :credit-application/name
+                                         :credit-application/email
+                                         :credit-application/amount
+                                         :credit-application/yearlyIncome
+                                         :credit-application/debt
+                                         :credit-application/date-of-birth
+                                         :credit-application/married
+                                         :credit-application/years-working
+                                         :credit-application/years-experience
+                                         :credit-application/industry
+                                         :credit-application/created-at]
+                                       eid)
+                             offers (get offers-by-app eid [])]
+                         (cond-> {:id            (:db/id m)
+                                  :name          (:credit-application/name m)
+                                  :email         (:credit-application/email m)
+                                  :amount        (:credit-application/amount m)
+                                  :yearlyIncome  (:credit-application/yearlyIncome m)
+                                  :debt          (:credit-application/debt m)
+                                  :dateOfBirth   (:credit-application/date-of-birth m)
+                                  :married       (:credit-application/married m)
+                                  :yearsWorking  (:credit-application/years-working m)
+                                  :industry      (:credit-application/industry m)
+                                  :offers        offers
+                                  :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
+                           (some? (:credit-application/years-experience m))
+                           (assoc :yearsExperience (:credit-application/years-experience m)))))
+                     page-eids)]
     {:items items
      :page p
      :pageSize s
      :total total}))
 
+(defn list-by-bank
+  "Bank listing: same app shape as admin listing, but includes only the calling bank's offer
+   as `interestRate` and `repaymentPeriod` (and omits the `offers` array)."
+  [conn bank-username {:keys [page pageSize]}]
+  (let [p (max 1 (long (or page 1)))
+        s (max 1 (min 100 (long (or pageSize 20))))
+        offset (* (dec p) s)
+        db (d/db conn)
+        bank-eid (or (user/eid-by-username conn bank-username)
+                      (throw (ex-info "Bank user not found" {:username (str bank-username)})))
+        rows (d/q '[:find ?e ?createdAt
+                    :where [?e :credit-application/created-at ?createdAt]]
+                  db)
+        sorted (->> rows (sort-by second #(compare %2 %1)))
+        total (count sorted)
+        page-eids (->> sorted (drop offset) (take s) (map first))
+        offer-rows (d/q '[:find ?appEid ?interest ?period
+                          :in $ ?bankEid ?appEids
+                          :where
+                          [?offer :offer/bank ?bankEid]
+                          [?offer :offer/credit-application ?appEid]
+                          [?offer :offer/interest-rate ?interest]
+                          [?offer :offer/repayment-period ?period]
+                          [(contains? ?appEids ?appEid)]]
+                        db bank-eid (set page-eids))
+        offers-by-app (into {} (map (fn [[appEid interest period]]
+                                        [appEid {:interestRate interest
+                                                 :repaymentPeriod period}]))
+                             offer-rows)
+        items (mapv (fn [eid]
+                       (let [m (d/pull db
+                                       '[:db/id
+                                         :credit-application/name
+                                         :credit-application/email
+                                         :credit-application/amount
+                                         :credit-application/yearlyIncome
+                                         :credit-application/debt
+                                         :credit-application/date-of-birth
+                                         :credit-application/married
+                                         :credit-application/years-working
+                                         :credit-application/years-experience
+                                         :credit-application/industry
+                                         :credit-application/created-at]
+                                       eid)
+                             offer (get offers-by-app eid)]
+                         (cond-> {:id            (:db/id m)
+                                  :name          (:credit-application/name m)
+                                  :email         (:credit-application/email m)
+                                  :amount        (:credit-application/amount m)
+                                  :yearlyIncome  (:credit-application/yearlyIncome m)
+                                  :debt          (:credit-application/debt m)
+                                  :dateOfBirth   (:credit-application/date-of-birth m)
+                                  :married       (:credit-application/married m)
+                                  :yearsWorking  (:credit-application/years-working m)
+                                  :industry      (:credit-application/industry m)
+                                  :createdAt     (some-> (:credit-application/created-at m) (.getTime))}
+                           (some? offer)
+                           (assoc :interestRate (:interestRate offer)
+                                  :repaymentPeriod (:repaymentPeriod offer))
+                           (some? (:credit-application/years-experience m))
+                           (assoc :yearsExperience (:credit-application/years-experience m)))))
+                     page-eids)]
+    {:items items
+     :page p
+     :pageSize s
+     :total total}))
+
+(defn offer!
+  "Bank submits an offer for a credit application.
+   Payload expects:
+   - interestRate (double)
+   - repaymentPeriod (long)"
+  [conn bank-username application-id {:keys [interestRate repaymentPeriod] :as payload}]
+  (let [app-eid (Long/parseLong (str application-id))
+        db      (d/db conn)
+        _       (when-not (d/pull db '[:db/id] app-eid)
+                  (throw (ex-info "Credit application not found" {:id application-id})))
+        bank-eid (or (user/eid-by-username conn bank-username)
+                      (throw (ex-info "Bank user not found" {:username (str bank-username)})))
+        ir      (or interestRate (:interestRate payload))
+        rp      (or repaymentPeriod (:repaymentPeriod payload))]
+    (when (or (nil? ir) (nil? rp))
+      (throw (ex-info "interestRate and repaymentPeriod are required"
+                      {:field (if (nil? ir) "interestRate" "repaymentPeriod")})))
+    (let [interest (parse-double* ir)
+          period   (parse-long* rp)
+          offer-key (str bank-eid ":" app-eid)
+          existing-offer-eid (ffirst (d/q '[:find ?e :in $ ?k :where [?e :offer/key ?k]] db offer-key))
+          tx (if existing-offer-eid
+               {:db/id existing-offer-eid
+                :offer/interest-rate interest
+                :offer/repayment-period period
+                :offer/bank bank-eid
+                :offer/credit-application app-eid}
+               {:offer/key offer-key
+                :offer/bank bank-eid
+                :offer/credit-application app-eid
+                :offer/interest-rate interest
+                :offer/repayment-period period})]
+      (d/transact conn {:tx-data [tx]})
+      conn)))
+
 (defn delete!
   "Delete a credit application by its numeric Datomic entity id (the `:id` returned from create!/list*)."
   [conn application-id]
   (let [db  (d/db conn)
-        eid (Long/parseLong (str application-id))]
-    (when-not (d/pull db '[:db/id] eid)
-      (throw (ex-info "Credit application not found" {:id application-id})))
-    ;; Use retractEntity so deletion doesn't depend on referenced entities
-    ;; (e.g. :credit-application/user may point to a user that no longer exists).
-    (d/transact conn {:tx-data [[:db/retractEntity eid]]})
+        app-eid (Long/parseLong (str application-id))
+        _   (when-not (d/pull db '[:db/id] app-eid)
+              (throw (ex-info "Credit application not found" {:id application-id})))
+        offer-eids (map first
+                         (d/q '[:find ?offerEid :in $ ?appEid
+                                :where
+                                [?offerEid :offer/credit-application ?appEid]]
+                              db
+                              app-eid))
+        tx-data (concat (mapv (fn [oid] [:db/retractEntity oid]) offer-eids)
+                        [[:db/retractEntity app-eid]])]
+    (d/transact conn {:tx-data tx-data})
     conn))
 

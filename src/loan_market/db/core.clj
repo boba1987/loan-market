@@ -73,6 +73,25 @@
     :db/valueType   :db.type/instant
     :db/cardinality :db.cardinality/one}])
 
+(def offer-schema
+  [{:db/ident         :offer/bank
+    :db/valueType     :db.type/ref
+    :db/cardinality   :db.cardinality/one}
+   {:db/ident         :offer/credit-application
+    :db/valueType     :db.type/ref
+    :db/cardinality   :db.cardinality/one}
+   {:db/ident         :offer/interest-rate
+    :db/valueType     :db.type/double
+    :db/cardinality   :db.cardinality/one}
+   {:db/ident         :offer/repayment-period
+    :db/valueType     :db.type/long
+    :db/cardinality   :db.cardinality/one}
+   ;; Unique deterministic key to enforce one offer per (bank, application).
+   {:db/ident         :offer/key
+    :db/valueType     :db.type/string
+    :db/unique        :db.unique/identity
+    :db/cardinality   :db.cardinality/one}])
+
 (defn- ident-exists?
   [db ident]
   (boolean (seq (d/q '[:find ?e :in $ ?ident :where [?e :db/ident ?ident]] db ident))))
@@ -90,7 +109,8 @@
         missing (into []
                       cat
                       [(missing-schema db user-schema)
-                       (missing-schema db credit-application-schema)])]
+                       (missing-schema db credit-application-schema)
+                       (missing-schema db offer-schema)])]
     (when (seq missing)
       (d/transact conn {:tx-data missing})))
   conn)
