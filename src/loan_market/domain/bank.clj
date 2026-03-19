@@ -1,6 +1,4 @@
-(ns loan-market.domain.bank
-  (:require [loan-market.domain.data-loader :as data-loader]
-            [clojure.pprint :as pprint]))
+(ns loan-market.domain.bank)
 
 (def sortBanks
   (fn [banks sort-by sort-direction]
@@ -45,20 +43,4 @@
 
 (def -main
   (fn []
-    (let [updated-banks (data-loader/load-banks-from-csv)
-          sorted-by-name (sortBanks updated-banks "name" "asc")
-          sorted-by-interest (sortBanks updated-banks "interest" "asc")
-          highest-interest (find-highest-interest-bank updated-banks)
-          banks-above-3 (count-banks-above-threshold updated-banks 3.0)
-          formatted-banks (format-bank-names updated-banks)]
-      (println "\nSorted banks by name (asc):")
-      (pprint/pprint sorted-by-name)
-      (println "\nSorted banks by interest rate (asc):")
-      (pprint/pprint sorted-by-interest)
-      (println "\nBank with highest interest rate (using reduce):")
-      (pprint/pprint highest-interest)
-      (println "\nNumber of banks with interest rate above 3.0% (using ->):")
-      (println banks-above-3)
-      (println "\nFormatted bank names (using map):")
-      (pprint/pprint formatted-banks)
-      sorted-by-name)))
+    (println "Bank CSV data has been removed. Provide banks as data structures to sort/find/count functions.")))

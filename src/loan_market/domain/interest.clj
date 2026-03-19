@@ -1,10 +1,9 @@
-(ns loan-market.domain.interest
-  (:require [loan-market.domain.data-loader :as data-loader]))
+(ns loan-market.domain.interest)
 
 (def average-interest-rate
   (fn
     ([]
-     (average-interest-rate data-loader/banks))
+     0.0)
     ([banks]
      (if (empty? banks)
        0.0
@@ -17,7 +16,7 @@
   "Uses reduce to calculate the sum of all interest rates"
   (fn
     ([]
-     (total-interest data-loader/banks))
+     0.0)
     ([banks]
      (reduce (fn [sum bank]
                (+ sum (:interest bank)))
@@ -28,7 +27,7 @@
   "Uses -> (thread-first) macro to filter banks above average, then count them"
   (fn
     ([]
-     (banks-above-average-count data-loader/banks))
+     0)
     ([banks]
      (let [avg (average-interest-rate banks)]
        (->> banks
@@ -39,7 +38,7 @@
   "Uses map to extract interest rates above a given threshold"
   (fn
     ([threshold]
-     (interest-rates-above-threshold data-loader/banks threshold))
+     (interest-rates-above-threshold [] threshold))
     ([banks threshold]
      (map :interest
           (filter (fn [bank] (> (:interest bank) threshold))

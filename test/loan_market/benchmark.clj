@@ -1,8 +1,7 @@
 (ns loan-market.benchmark
   (:require [criterium.core :as c]
             [loan-market.domain.bank :as bank]
-            [loan-market.domain.interest :as interest]
-            [loan-market.domain.data-loader :as data-loader]))
+            [loan-market.domain.interest :as interest]))
 
 (def test-banks [{:name "Bank A" :interest 2.5}
                  {:name "Bank B" :interest 3.0}
@@ -43,7 +42,6 @@
   (c/bench (interest/interest-rates-above-threshold test-banks 3.0)))
 
 (defn benchmark-all []
-  "Run all benchmarks"
   (println "Running performance benchmarks on loan-market functions...")
   (benchmark-sort-banks)
   (benchmark-find-highest-interest-bank)

@@ -13,7 +13,6 @@ src/loan_market/
   domain/
     user.clj         # User entity (auth, CRUD)
     bank.clj         # Bank/banking domain logic
-    data_loader.clj  # CSV bank data
     interest.clj     # Interest calculations
   auth/
     core.clj         # JWT, login, role middleware
@@ -91,10 +90,6 @@ These are for local development only. Change or disable them in production.
   - `POST /api/admin/users` – Body `{"username":"...","password":"...","role":"user"|"bank"|"admin"}`. Creates a new user.
   - `PUT /api/admin/users/:username` – Body `{"password":"...","role":"..."}` (either can be included). Updates the user.
   - `DELETE /api/admin/users/:username` – Deletes the user.
-  - `GET /api/admin/banks` – Returns banks from `resources/data/banks.csv` as JSON.
-  - `POST /api/admin/banks` – Body `{"id":1,"name":"...","interest":3.5}`. Adds a bank.
-  - `PUT /api/admin/banks/:id` – Body `{"name":"...","interest":3.5}`. Updates the bank.
-  - `DELETE /api/admin/banks/:id` – Deletes the bank.
   - `GET /api/admin/credit-applications?page=1&pageSize=20` – List all credit applications with offset pagination.
   - `DELETE /api/admin/credit-applications/:id` – Deletes a credit application.
 - **Authenticated (Bank)** – Same header, role must be `bank`.
