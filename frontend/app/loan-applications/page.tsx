@@ -21,7 +21,7 @@ type LoanApplication = {
   yearlyIncome: number;
   debt: number;
   dateOfBirth: string;
-  married: boolean;
+  maritalStatus?: string;
   yearsWorking: number;
   industry: string;
   createdAt: number;
@@ -143,7 +143,7 @@ export default function LoanApplicationsPage() {
               <p><strong>Income:</strong> {formatAmount(app.yearlyIncome)}</p>
               <p><strong>Debt:</strong> {formatAmount(app.debt)}</p>
               <p><strong>Date of birth:</strong> {app.dateOfBirth}</p>
-              <p><strong>Married:</strong> {String(app.married)}</p>
+              <p><strong>Marital status:</strong> {app.maritalStatus ?? "-"}</p>
               <p><strong>Years working:</strong> {app.yearsWorking}</p>
               <p><strong>Industry:</strong> {app.industry}</p>
             </div>

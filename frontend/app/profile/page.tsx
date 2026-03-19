@@ -11,7 +11,7 @@ type UserProfile = {
   name: string;
   email: string;
   dateOfBirth?: string | null;
-  married?: boolean | null;
+  maritalStatus?: "not married" | "married" | "divorced" | "other" | null;
   yearsWorking?: number | null;
   industry?: string | null;
 };
@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState({
     name: "",
     dateOfBirth: "",
-    married: "false",
+    maritalStatus: "",
     yearsWorking: "",
     industry: "",
   });
@@ -49,7 +49,7 @@ export default function ProfilePage() {
           setForm({
             name: p.name ?? "",
             dateOfBirth: p.dateOfBirth ?? "",
-            married: String(Boolean(p.married)),
+            maritalStatus: p.maritalStatus ?? "",
             yearsWorking: p.yearsWorking != null ? String(p.yearsWorking) : "",
             industry: p.industry ?? "",
           });
@@ -96,7 +96,7 @@ export default function ProfilePage() {
           body: JSON.stringify({
             name: form.name || undefined,
             dateOfBirth: form.dateOfBirth || undefined,
-            married: form.married === "true",
+            maritalStatus: form.maritalStatus || undefined,
             yearsWorking: form.yearsWorking ? Number(form.yearsWorking) : undefined,
             industry: form.industry || undefined,
           }),
@@ -141,14 +141,17 @@ export default function ProfilePage() {
             {fieldErrors.dateOfBirth ? <p className="mt-1 text-xs text-red-600">{fieldErrors.dateOfBirth}</p> : null}
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Married</label>
+            <label className="mb-1 block text-sm font-medium">Marital status</label>
             <select
               className="w-full rounded border px-3 py-2"
-              value={form.married}
-              onChange={(e) => setForm((p) => ({ ...p, married: e.target.value }))}
+              value={form.maritalStatus}
+              onChange={(e) => setForm((p) => ({ ...p, maritalStatus: e.target.value }))}
             >
-              <option value="true">true</option>
-              <option value="false">false</option>
+              <option value="">Select...</option>
+              <option value="not married">not married</option>
+              <option value="married">married</option>
+              <option value="divorced">divorced</option>
+              <option value="other">other</option>
             </select>
           </div>
           <div>
