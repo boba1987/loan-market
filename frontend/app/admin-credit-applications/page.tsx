@@ -24,6 +24,15 @@ type Item = {
   }>;
 };
 
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatAmount(value: number): string {
+  return numberFormatter.format(value);
+}
+
 export default function AdminCreditApplicationsPage() {
   const { auth, loading } = useAuthState(true);
   const [items, setItems] = useState<Item[]>([]);
@@ -80,7 +89,7 @@ export default function AdminCreditApplicationsPage() {
               <p><strong>ID:</strong> {item.id}</p>
               <p><strong>Name:</strong> {item.name}</p>
               <p><strong>Email:</strong> {item.email}</p>
-              <p><strong>Amount:</strong> {item.amount}</p>
+              <p><strong>Amount:</strong> {formatAmount(item.amount)}</p>
             </div>
             {item.offers?.length ? (
               <ul className="mb-2 list-disc pl-5">

@@ -1,8 +1,17 @@
 (ns loan-market.routes.user
-  (:require [compojure.core :refer [GET POST routes]]
+  (:require [compojure.core :refer [GET POST PUT routes]]
             [loan-market.domain.user :as user]
             [loan-market.domain.credit-application :as credit-application]
             [ring.util.response :as response]))
+
+(defn- body-val [body k]
+  (let [missing ::missing
+        v1 (get body k missing)
+        v2 (get body (name k) missing)]
+    (cond
+      (not= v1 missing) v1
+      (not= v2 missing) v2
+      :else nil)))
 
 (defn user-routes
   [conn]
@@ -18,6 +27,42 @@
                                    :yearsWorking (:user/years-working u)
                                    :industry     (:user/industry u)})
              (response/content-type "application/json")))))
+
+   (PUT "/me" []
+     (fn [req]
+       (try
+         (let [body (:body req)
+               email (:auth/email req)
+               name (body-val body :name)
+               dateOfBirth (body-val body :dateOfBirth)
+               married (body-val body :married)
+               yearsWorking (body-val body :yearsWorking)
+               industry (body-val body :industry)]
+           (when (and (nil? name) (nil? dateOfBirth) (nil? married) (nil? yearsWorking) (nil? industry))
+             (throw (ex-info "At least one of name, dateOfBirth, married, yearsWorking, industry is required" {})))
+           (user/update! conn email {:name name
+                                     :dateOfBirth dateOfBirth
+                                     :married married
+                                     :yearsWorking yearsWorking
+                                     :industry industry})
+           (let [u (user/find-by-email conn email)]
+             (-> (response/response {:role         (:auth/role req)
+                                     :name         (:user/name u)
+                                     :email        (:user/email u)
+                                     :dateOfBirth  (:user/date-of-birth u)
+                                     :married      (:user/married u)
+                                     :yearsWorking (:user/years-working u)
+                                     :industry     (:user/industry u)
+                                     :updated      true})
+                 (response/content-type "application/json"))))
+         (catch clojure.lang.ExceptionInfo e
+           (-> (response/response {:error (.getMessage e)})
+               (response/status 400)
+               (response/content-type "application/json")))
+         (catch Exception _
+           (-> (response/response {:error "Internal server error"})
+               (response/status 500)
+               (response/content-type "application/json"))))))
 
    (POST "/credit-applications" []
      (fn [req]

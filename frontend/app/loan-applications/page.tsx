@@ -36,6 +36,15 @@ type ApplicationResponse = {
   total: number;
 };
 
+const numberFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+function formatAmount(value: number): string {
+  return numberFormatter.format(value);
+}
+
 export default function LoanApplicationsPage() {
   const { auth, loading } = useAuthState(true);
   const [data, setData] = useState<ApplicationResponse | null>(null);
@@ -110,9 +119,9 @@ export default function LoanApplicationsPage() {
               <p><strong>ID:</strong> {app.id}</p>
               <p><strong>Name:</strong> {app.name}</p>
               <p><strong>Email:</strong> {app.email}</p>
-              <p><strong>Amount:</strong> {app.amount}</p>
-              <p><strong>Income:</strong> {app.yearlyIncome}</p>
-              <p><strong>Debt:</strong> {app.debt}</p>
+              <p><strong>Amount:</strong> {formatAmount(app.amount)}</p>
+              <p><strong>Income:</strong> {formatAmount(app.yearlyIncome)}</p>
+              <p><strong>Debt:</strong> {formatAmount(app.debt)}</p>
               <p><strong>Date of birth:</strong> {app.dateOfBirth}</p>
               <p><strong>Married:</strong> {String(app.married)}</p>
               <p><strong>Years working:</strong> {app.yearsWorking}</p>
