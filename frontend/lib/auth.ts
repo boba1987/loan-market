@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export type Role = "user" | "bank" | "admin";
@@ -37,14 +37,21 @@ export function useAuthState(redirectToLogin = false): {
   loading: boolean;
 } {
   const router = useRouter();
-  const isClient = typeof window !== "undefined";
-  const auth = isClient ? readAuth() : null;
+  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isClient && !auth && redirectToLogin) {
-      router.replace("/login");
-    }
-  }, [auth, isClient, redirectToLogin, router]);
+    const nextAuth = readAuth();
+    // Defer state updates to avoid render-cascade warnings.
+    void Promise.resolve().then(() => {
+      setAuth(nextAuth);
+      setLoading(false);
 
-  return { auth, loading: !isClient };
+      if (redirectToLogin && !nextAuth) {
+        router.replace("/login");
+      }
+    });
+  }, [redirectToLogin, router]);
+
+  return { auth, loading };
 }
