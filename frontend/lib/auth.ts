@@ -13,13 +13,16 @@ export type AuthState = {
 };
 
 const AUTH_STORAGE_KEY = "loan-market-auth";
+const AUTH_UPDATED_EVENT = "loan-market-auth-updated";
 
 export function saveAuth(auth: AuthState): void {
   localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT));
 }
 
 export function clearAuth(): void {
   localStorage.removeItem(AUTH_STORAGE_KEY);
+  window.dispatchEvent(new CustomEvent(AUTH_UPDATED_EVENT));
 }
 
 export function readAuth(): AuthState | null {
@@ -41,16 +44,19 @@ export function useAuthState(redirectToLogin = false): {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const nextAuth = readAuth();
-    // Defer state updates to avoid render-cascade warnings.
-    void Promise.resolve().then(() => {
+    const refresh = () => {
+      const nextAuth = readAuth();
       setAuth(nextAuth);
       setLoading(false);
-
       if (redirectToLogin && !nextAuth) {
         router.replace("/login");
       }
-    });
+    };
+
+    window.addEventListener(AUTH_UPDATED_EVENT, refresh);
+    void Promise.resolve().then(refresh);
+
+    return () => window.removeEventListener(AUTH_UPDATED_EVENT, refresh);
   }, [redirectToLogin, router]);
 
   return { auth, loading };
