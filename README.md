@@ -1,5 +1,8 @@
 # Loan Market
 
+Online loan marketplace that helps users compare different credit offers and find the most suitable loan from partnered financial institutions.
+Users submit loan applications, banks respond with offers, and admins manage users and applications. The app uses JWT role-based authentication with persistent storage via Datomic Local.
+
 Full-stack loan marketplace demo with:
 - **Backend**: Clojure + Ring + Datomic Local
 - **Frontend**: Next.js + React + TypeScript + Tailwind
